@@ -1,0 +1,38 @@
+# Compiled output
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Local config
+.env
+application-local.yml
+application-local.yaml
+
+# Node (docs / tooling)
+node_modules/
+
+# Maven wrapper jar 通常需要提交，如不提交再放开下面一行
+# .mvn/wrapper/maven-wrapper.jar
