@@ -1,0 +1,143 @@
+# ============================================================
+# wechat-server-v2 主配置
+# 敏感/环境相关项都支持环境变量覆盖，格式为 ${环境变量名:默认值}
+# ============================================================
+
+server:
+  # HTTP 服务端口，默认 8080，可用 SERVER_PORT 覆盖
+  port: ${SERVER_PORT:8080}
+  # 优雅停机：收到停止信号后，先处理完进行中的请求再退出
+  shutdown: graceful
+
+spring:
+  application:
+    # 应用名，会出现在日志和 Actuator 信息中
+    name: wechat-server-v2
+
+  lifecycle:
+    # 优雅停机最长等待 20 秒，超时后强制退出
+    timeout-per-shutdown-phase: 20s
+
+  # -------------------- MySQL 数据源（阿里 Druid 连接池） --------------------
+  datasource:
+    # JDBC 连接串，可用 DB_URL 覆盖
+    # createDatabaseIfNotExist=true：本地没有 wechat_v2 库时由驱动自动创建
+    # useUnicode + characterEncoding：按 UTF-8 传输
+    # serverTimezone=Asia/Shanghai：时区与服务端保持一致
+    # useSSL=false：内网连接不启用 SSL
+    # allowPublicKeyRetrieval=true：MySQL 8 使用 caching_sha2_password 时允许取公钥
+    url: "${DB_URL:jdbc:mysql://localhost:3306/wechat_v2?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}"
+    # 数据库用户名，可用 DB_USERNAME 覆盖
+    username: ${DB_USERNAME:root}
+    # 数据库密码，可用 DB_PASSWORD 覆盖
+    password: ${DB_PASSWORD:123456}
+    # JDBC 驱动类，MySQL 8 使用 com.mysql.cj.jdbc.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # Druid 连接池参数
+    druid:
+      # 启动时建立的初始连接数
+      initial-size: 2
+      # 最小空闲连接数，空闲时至少保留这么多连接
+      min-idle: 2
+      # 最大连接数，1～2 千在线先用 10 个，可用 DB_POOL_MAX 覆盖
+      max-active: ${DB_POOL_MAX:10}
+      # 获取连接的最长等待时间（毫秒），3 秒拿不到就抛异常，避免请求长时间阻塞
+      max-wait: 3000
+      # 空闲连接检测间隔（毫秒），每 60 秒检查一次
+      time-between-eviction-runs-millis: 60000
+      # 连接空闲多久后被回收（毫秒），10 分钟
+      min-evictable-idle-time-millis: 600000
+      # 连接最长存活时间（毫秒），30 分钟，需小于 MySQL 的 wait_timeout
+      max-evictable-idle-time-millis: 1800000
+      # 探活 SQL，空闲检测时执行
+      validation-query: SELECT 1
+      # 空闲时校验连接是否可用（允许空闲检测）
+      test-while-idle: true
+      # 从池中取连接时是否校验，关闭以减少开销
+      test-on-borrow: false
+      # 归还连接时是否校验，关闭以减少开销
+      test-on-return: false
+      # 保持最小空闲连接存活，避免被 MySQL 主动断开
+      keep-alive: true
+
+  # -------------------- Redis --------------------
+  data:
+    redis:
+      # Redis 主机，可用 REDIS_HOST 覆盖
+      host: ${REDIS_HOST:localhost}
+      # Redis 端口，可用 REDIS_PORT 覆盖
+      port: ${REDIS_PORT:6379}
+      # Redis 密码，没有密码则留空，可用 REDIS_PASSWORD 覆盖
+      password: ${REDIS_PASSWORD:}
+      # Redis 库号，默认 0，可用 REDIS_DATABASE 覆盖
+      database: ${REDIS_DATABASE:0}
+      # 单次命令超时时间，2 秒，防止 Redis 抖动拖垮请求
+      timeout: 2000ms
+
+  # -------------------- Flyway 数据库迁移 --------------------
+  flyway:
+    # 启动时自动执行 db/migration 下尚未执行过的脚本
+    enabled: true
+    # 迁移脚本所在位置
+    locations: classpath:db/migration
+    # 遇到已有数据的库时是否自动 baseline，关闭以免掩盖脚本问题
+    baseline-on-migrate: false
+    # 启动时校验已执行脚本的 checksum，被篡改则启动失败
+    validate-on-migrate: true
+    # 禁止 flyway clean（会清空整个库），防止误操作
+    clean-disabled: true
+
+  # -------------------- JSON 序列化 --------------------
+  jackson:
+    # 时间统一按东八区输出
+    time-zone: Asia/Shanghai
+    # null 字段不参与序列化，减小响应体积
+    default-property-inclusion: non_null
+
+# -------------------- MyBatis-Plus --------------------
+mybatis-plus:
+  configuration:
+    # 数据库下划线字段自动映射到 Java 驼峰属性
+    map-underscore-to-camel-case: true
+  global-config:
+    # 关闭启动时的 MyBatis-Plus banner，保持日志干净
+    banner: false
+
+# -------------------- 接口文档（Swagger UI） --------------------
+springdoc:
+  api-docs:
+    # OpenAPI JSON 的访问路径
+    path: /v3/api-docs
+    # 是否启用接口文档，生产环境可用 SPRINGDOC_ENABLED=false 关闭
+    enabled: ${SPRINGDOC_ENABLED:true}
+  swagger-ui:
+    # Swagger UI 页面路径，实际会跳到 /swagger-ui/index.html
+    path: /swagger-ui.html
+    # 是否启用 Swagger UI
+    enabled: ${SPRINGDOC_ENABLED:true}
+
+# -------------------- Actuator 监控 --------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        # 只暴露健康检查和基本信息，不暴露敏感端点
+        include: health,info
+
+# -------------------- 日志 --------------------
+# 输出格式、滚动策略见 logback-spring.xml，这里只配置目录和级别
+logging:
+  file:
+    # 日志目录，可用 LOG_DIR 覆盖
+    path: ${LOG_DIR:logs}
+  level:
+    # 全局日志级别
+    root: info
+    # 业务包日志级别，开发期用 debug 便于排查
+    com.wechat: debug
+    # Druid 连接池日志级别
+    com.alibaba.druid: info
+    # Lettuce Redis 客户端日志级别
+    io.lettuce.core: info
+    # Spring Data Redis 日志级别
+    org.springframework.data.redis: info

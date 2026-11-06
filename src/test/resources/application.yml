@@ -1,0 +1,42 @@
+# ============================================================
+# 测试环境配置
+# 单元测试不依赖本机 MySQL / Redis / Flyway，保证任何机器都能跑通
+# ============================================================
+
+spring:
+  # 使用 H2 内存库，MODE=MySQL 兼容 MySQL 语法
+  datasource:
+    # H2 内存库连接串；DB_CLOSE_DELAY=-1 让库在最后一个连接关闭后仍保留
+    url: jdbc:h2:mem:wechat;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    # H2 驱动类
+    driver-class-name: org.h2.Driver
+    # H2 默认用户名
+    username: sa
+    # H2 默认密码为空
+    password:
+    # Druid 在测试环境同样生效，参数按测试需要精简
+    druid:
+      # 探活 SQL，避免 testWhileIdle 因缺少校验语句而报错
+      validation-query: SELECT 1
+
+  # 测试不走 Flyway，表结构由测试用例按需创建
+  flyway:
+    # 关闭数据库迁移
+    enabled: false
+
+  # 测试只启动上下文，不会真正读写 Redis
+  data:
+    redis:
+      # Redis 主机
+      host: localhost
+      # Redis 端口
+      port: 6379
+
+# 测试环境关闭接口文档，减少启动开销
+springdoc:
+  api-docs:
+    # 关闭 OpenAPI JSON
+    enabled: false
+  swagger-ui:
+    # 关闭 Swagger UI
+    enabled: false

@@ -1,0 +1,38 @@
+# EditorConfig：统一不同 IDE / 编辑器的代码格式
+# 缩进统一使用 2 个空格，禁止 Tab（按项目要求；阿里手册默认为 4 空格）
+# https://editorconfig.org
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+# 阿里规范：单行不超过 120 个字符
+max_line_length = 120
+
+# Java 续行缩进：阿里规范要求比首行多 4 个空格，本项目统一为 2 个空格，此处不遵循阿里规范
+# WRAP_LONG_LINES：保存/格式化时，超过 120 字符的行自动折行
+[*.java]
+ij_java_continuation_indent_size = 2
+ij_java_wrap_long_lines = true
+ij_java_method_call_chain_wrap = split_into_lines
+ij_java_wrap_first_method_in_call_chain = true
+# 连续空行最多保留 1 行（仅限语句/成员之间；IDEA 不会删除右花括号 } 前的空行）
+ij_java_keep_blank_lines_in_code = 1
+ij_java_keep_blank_lines_in_declarations = 1
+
+# Markdown 行尾两个空格表示换行，不能自动删除
+[*.md]
+trim_trailing_whitespace = false
+
+# Windows 批处理脚本保持 CRLF
+[*.{bat,cmd}]
+end_of_line = crlf
+
+# Maven wrapper 的 shell 脚本必须保持 LF
+[mvnw]
+end_of_line = lf
