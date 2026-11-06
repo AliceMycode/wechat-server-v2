@@ -9,7 +9,8 @@
 
   <!-- 日志级别全部从 application.yml 的 logging.level.* 读取，改 yml 即可生效，无需动本文件 -->
   <springProperty scope="context" name="ROOT_LOG_LEVEL" source="logging.level.root" defaultValue="INFO"/>
-  <springProperty scope="context" name="APP_LOG_LEVEL" source="logging.level.com.wechat" defaultValue="INFO"/>
+  <!-- 应用名前缀：Spring Boot 3.4+ 原生日志格式自带 [应用名] 段，从 spring.application.name 读取 -->
+  <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue=""/>  <springProperty scope="context" name="APP_LOG_LEVEL" source="logging.level.com.wechat" defaultValue="INFO"/>
   <springProperty scope="context" name="DRUID_LOG_LEVEL" source="logging.level.com.alibaba.druid" defaultValue="INFO"/>
   <springProperty scope="context" name="LETTUCE_LOG_LEVEL" source="logging.level.io.lettuce.core" defaultValue="INFO"/>
   <springProperty scope="context" name="SPRING_REDIS_LOG_LEVEL" source="logging.level.org.springframework.data.redis" defaultValue="INFO"/>
@@ -23,7 +24,7 @@
   <!-- 控制台：与 Spring Boot 默认启动日志一致的彩色高亮格式 -->
   <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%clr(%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx</pattern>
+      <pattern>%clr(%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([${APP_NAME}] [%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx</pattern>
     </encoder>
   </appender>
 
