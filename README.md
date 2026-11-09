@@ -89,11 +89,20 @@ DROP TABLE IF EXISTS message_receipt;
 
 - [架构与技术栈设计（评审稿）](docs/01-架构与技术栈.md)
 - [表结构说明（V1 基础 IM）](docs/02-表结构说明.md)
+- [扩容与微服务演进路线](docs/03-扩容与微服务演进路线.md)
 - v1 仓库 `docs/design/新工程重设计要点.md`
 
 ## 开发规范
 
 遵循《阿里巴巴 Java 开发手册（黄山版）》。
+
+### SQL 写法约定（MyBatis-Plus 与 XML 混合使用）
+
+- 单表简单查询走 MyBatis-Plus `BaseMapper` + `LambdaQueryWrapper`（编译期列名校验，禁用字符串列名的 `QueryWrapper`）；注意 MP 默认 `SELECT` 全字段，等价于 `select *`，大字段查询需用 `select(...)` 收窄（规约【强制】禁止 `select *`）；
+- 跨表 join、聚合统计、复杂排序分页等复杂 SQL 手写 XML，放在 `resources/mapper/`（`mapper-locations` 默认目录）；
+- XML 返回自定义 VO 时必须定义 `<resultMap>`，禁止用 `HashMap` 接收查询结果集（规约【强制】）；
+- XML 中参数一律用 `#{}`，禁止 `${}`（规约【强制】）；
+- Wrapper 链超过 3~4 个条件、出现嵌套 `or` 时，改写 XML，保持 SQL 可见可评审。
 
 代码格式由 [.editorconfig](.editorconfig) 统一：UTF-8、LF 换行、行尾不留空格、缩进统一 2 个空格、禁止 Tab；单行不超过 120 字符，Java 续行相对首行缩进 2 个空格（阿里规范为 4 个空格，本项目按 2 空格统一）。IntelliJ IDEA 默认支持 EditorConfig，无需额外插件；本地已开启保存时自动执行 Reformat code、Optimize imports、删除行尾空格、文件末尾补换行。
 
@@ -117,10 +126,25 @@ pom.xml
 mvnw / mvnw.cmd
 src/main/java/com/wechat/www
 ├── WechatServerV2Application.java
-└── config/                      # 基础配置（MyBatis-Plus、OpenAPI 等）
+├── config/                      # 框架配置类（MyBatis-Plus、Jackson、OpenAPI 等）
+├── controller/                  # Web 层：REST 接口入口、参数校验
+├── service/                     # Service 层接口
+│   └── impl/                    # Service 层实现
+├── manager/                     # Manager 层：通用业务、第三方封装、多 DAO 组合
+├── mapper/                      # DAO 层：MyBatis-Plus Mapper
+└── domain/                      # 领域模型：DO 放本包（类名 DO 结尾）
+    ├── dto/                     # DTO：Service 向外传输的对象
+    ├── vo/                      # VO：返回给前端的视图对象
+    └── query/                   # Query：查询参数对象
 src/main/resources
-├── application.yml
+├── application.yml              # 主配置（公共配置 + 激活的 profile）
+├── application-dev.yml          # 开发环境配置
+├── application-test.yml         # 测试环境配置
+├── application-prod.yml         # 生产环境配置
 ├── logback-spring.xml           # 日志输出格式与滚动策略
+├── mapper/                      # MyBatis XML 映射文件（mapper-locations 默认目录）
+├── static/                      # 静态资源（css / js / images）
+├── template/                    # 模板文件
 └── db/
     └── migration/               # Flyway 迁移脚本
 src/test
