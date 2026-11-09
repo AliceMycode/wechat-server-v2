@@ -17,7 +17,9 @@ import tools.jackson.databind.ser.std.StdSerializer;
 @Configuration
 public class JacksonConfig {
 
-  /** JavaScript 安全整数上限 2^53 - 1，超过此范围的整数 JSON.parse 会丢失末尾精度 */
+  /**
+   * JavaScript 安全整数上限 2^53 - 1，超过此范围的整数 JSON.parse 会丢失末尾精度
+   */
   private static final long JS_MAX_SAFE_INTEGER = 9007199254740991L;
 
   /**
@@ -34,8 +36,8 @@ public class JacksonConfig {
   public JsonMapperBuilderCustomizer longSafeToStringCustomizer() {
     SimpleModule longSafeModule = new SimpleModule();
     LongOutOfRangeToStringSerializer serializer = new LongOutOfRangeToStringSerializer();
-    longSafeModule.addSerializer(Long.class, serializer);
-    longSafeModule.addSerializer(Long.TYPE, serializer);
+    longSafeModule.addSerializer(Long.class, serializer); // 装箱类型 Long
+    longSafeModule.addSerializer(Long.TYPE, serializer); // 基本类型 long（Long.TYPE 即 long.class）
     return builder -> builder.addModule(longSafeModule);
   }
 
