@@ -10,7 +10,7 @@ IM 服务端 v2
 ## 技术栈
 
 JDK 21 + Spring Boot 4.1.x + MyBatis-Plus 3.5.18 + MySQL 8.0 + Redis 7 + Netty 4.2。
-接口文档使用 springdoc-openapi 3.1（OpenAPI 3 / Swagger UI），Spring Boot 4 不使用旧的 Springfox 3.0。
+接口文档使用 Knife4j 4.5（OpenAPI 3，访问 `/doc.html`），底层由其内置的 springdoc-openapi 生成；Spring Boot 4 不使用旧的 Springfox 3.0。
 依赖兼容性见 `docs/01-架构与技术栈.md` 的 4.3 节；Spring AI 2.x / spring-ai-agent-utils 后期接入。
 
 ## 当前部署
@@ -108,7 +108,7 @@ DROP TABLE IF EXISTS message_receipt;
 mvn spring-boot:run
 ```
 
-默认 HTTP 端口 `8080`，健康检查 `GET /actuator/health`，接口文档 `GET /swagger-ui.html`。
+默认 HTTP 端口 `8080`，健康检查 `GET /actuator/health`，接口文档 `GET /doc.html`。
 
 ## 目录结构
 

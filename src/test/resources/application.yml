@@ -37,6 +37,3 @@ springdoc:
   api-docs:
     # 关闭 OpenAPI JSON
     enabled: false
-  swagger-ui:
-    # 关闭 Swagger UI
-    enabled: false

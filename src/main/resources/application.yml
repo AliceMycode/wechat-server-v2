@@ -103,18 +103,20 @@ mybatis-plus:
     # 关闭启动时的 MyBatis-Plus banner，保持日志干净
     banner: false
 
-# -------------------- 接口文档（Swagger UI） --------------------
+# -------------------- 接口文档（Knife4j） --------------------
+# OpenAPI 3 文档由 knife4j 内置的 springdoc 生成，UI 访问 /doc.html
 springdoc:
   api-docs:
     # OpenAPI JSON 的访问路径
     path: /v3/api-docs
     # 是否启用接口文档，生产环境可用 SPRINGDOC_ENABLED=false 关闭
     enabled: ${SPRINGDOC_ENABLED:true}
-  swagger-ui:
-    # Swagger UI 页面路径，实际会跳到 /swagger-ui/index.html
-    path: /swagger-ui.html
-    # 是否启用 Swagger UI
-    enabled: ${SPRINGDOC_ENABLED:true}
+knife4j:
+  # knife4j 增强功能开关（跟随文档总开关）
+  enable: ${SPRINGDOC_ENABLED:true}
+  setting:
+    # 文档界面语言
+    language: zh-CN
 
 # -------------------- Actuator 监控 --------------------
 management:

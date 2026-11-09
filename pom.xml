@@ -22,8 +22,9 @@
     <java.version>21</java.version>
     <!-- 以下版本不在 Spring Boot 依赖管理范围内，需要自己声明 -->
     <mybatis-plus.version>3.5.18</mybatis-plus.version>
-    <springdoc.version>3.1.0</springdoc.version>
     <druid.version>1.2.28</druid.version>
+    <!-- Knife4j 不在 Spring Boot 依赖管理范围内，需要自己声明版本 -->
+    <knife4j.version>4.5.0</knife4j.version>
   </properties>
 
   <dependencies>
@@ -104,11 +105,12 @@
 
     <!-- ==================== 接口文档 ==================== -->
 
-    <!-- springdoc-openapi：生成 OpenAPI 3 文档，并提供 Swagger UI（Spring Boot 4 对应的版本） -->
+    <!-- Knife4j：增强版接口文档 UI（doc.html），内置 springdoc-openapi 2.5.0 生成 OpenAPI 3 文档 -->
+    <!-- 注意：knife4j 4.5.0 官方适配 Spring Boot 3.x，在 Boot 4 下属于实测可用方案，升级 knife4j 时需回归验证 -->
     <dependency>
-      <groupId>org.springdoc</groupId>
-      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-      <version>${springdoc.version}</version>
+      <groupId>com.github.xiaoymin</groupId>
+      <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+      <version>${knife4j.version}</version>
     </dependency>
 
     <!-- ==================== 工具 ==================== -->
