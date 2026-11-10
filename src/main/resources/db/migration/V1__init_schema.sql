@@ -25,8 +25,8 @@ CREATE TABLE user_account (
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   is_deleted      TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否删除 1是 0否',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_country_phone (country_code, phone),
-  KEY idx_status_create (status, create_time)
+  UNIQUE KEY uk_country_phone (country_code, phone), -- 登录 const 定位 + 注册防重兜底（并发撞唯一键）
+  KEY idx_status_create (status, create_time) -- 后台按状态筛选 + 注册时间排序分页（等值在前、排序列在后）
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户账号';
 
 CREATE TABLE user_profile (
@@ -42,7 +42,7 @@ CREATE TABLE user_profile (
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   is_deleted      TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否删除 1是 0否',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_user_id (user_id)
+  UNIQUE KEY uk_user_id (user_id) -- 一用户一行资料；展示昵称/头像的统一查询入口（单聊、群成员卡片）
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户资料';
 
 CREATE TABLE user_setting (
@@ -56,7 +56,7 @@ CREATE TABLE user_setting (
   update_time             DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   is_deleted              TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否删除 1是 0否',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_user_id (user_id)
+  UNIQUE KEY uk_user_id (user_id) -- 一用户一行设置；读/改隐私推送配置的唯一定位入口
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户设置';
 
 CREATE TABLE user_device (
@@ -73,8 +73,8 @@ CREATE TABLE user_device (
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   is_deleted      TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否删除 1是 0否',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_user_device (user_id, device_id),
-  KEY idx_user_active (user_id, last_active_time)
+  UNIQUE KEY uk_user_device (user_id, device_id), -- 同一设备重复登录幂等，不插两行
+  KEY idx_user_active (user_id, last_active_time) -- 推送选最近活跃设备（user_id 定位 + 活跃时间倒序取第一条）
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户设备';
 
 -- ------------------------------------------------------------
@@ -90,8 +90,8 @@ CREATE TABLE user_friend (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_user_friend (user_id, friend_user_id),
-  KEY idx_friend_user (friend_user_id, status)
+  UNIQUE KEY uk_user_friend (user_id, friend_user_id), -- 防重复加好友；"我的好友列表"正向查询（左前缀 user_id）
+  KEY idx_friend_user (friend_user_id, status) -- 反向"谁把我当好友"（注销清理/关系校验），status 区段内过滤
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '好友关系（双向两行）';
 
 CREATE TABLE friend_apply (
@@ -104,8 +104,8 @@ CREATE TABLE friend_apply (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  KEY idx_receive_status (receive_user_id, status, create_time),
-  KEY idx_apply_user (apply_user_id, create_time)
+  KEY idx_receive_status (receive_user_id, status, create_time), -- "新朋友"页：收到的申请，等值+状态+申请时间排序
+  KEY idx_apply_user (apply_user_id, create_time) -- "我发出的申请"进度列表，按时间倒序
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '好友申请';
 
 CREATE TABLE user_blacklist (
@@ -116,8 +116,8 @@ CREATE TABLE user_blacklist (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_user_blocked (user_id, blocked_user_id),
-  KEY idx_blocked_user (blocked_user_id)
+  UNIQUE KEY uk_user_blocked (user_id, blocked_user_id), -- 拉黑幂等；发消息前校验 A 是否拉黑 B（左前缀）
+  KEY idx_blocked_user (blocked_user_id) -- 反查"谁把我拉黑了"（注销清理、好友推荐过滤）
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户黑名单';
 
 -- ------------------------------------------------------------
@@ -137,8 +137,8 @@ CREATE TABLE group_info (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_group_no (group_no),
-  KEY idx_owner (owner_id)
+  UNIQUE KEY uk_group_no (group_no), -- 群号唯一兜底；搜群/扫码入群的查询索引（对外短号，人用）
+  KEY idx_owner (owner_id) -- "我创建的群"（群主管理列表）
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '群信息';
 
 CREATE TABLE group_member (
@@ -153,9 +153,9 @@ CREATE TABLE group_member (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_group_user (group_id, user_id),
-  KEY idx_user_status (user_id, status),
-  KEY idx_group_status (group_id, status)
+  UNIQUE KEY uk_group_user (group_id, user_id), -- 成员唯一防重复入群；单点校验 user 是否在群（发消息权限）
+  KEY idx_user_status (user_id, status), -- "我加入了哪些群"（侧边栏群列表）
+  KEY idx_group_status (group_id, status) -- 群成员列表；群消息投递拉"在群成员"名单（每发一条消息都查）
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '群成员';
 
 CREATE TABLE group_apply (
@@ -170,8 +170,8 @@ CREATE TABLE group_apply (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  KEY idx_group_status (group_id, status, create_time),
-  KEY idx_apply_user (apply_user_id, create_time)
+  KEY idx_group_status (group_id, status, create_time), -- 群主看入群申请（等值+状态+申请时间排序）
+  KEY idx_apply_user (apply_user_id, create_time) -- 申请人看进度，按时间倒序
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '入群申请';
 
 -- ------------------------------------------------------------
@@ -190,9 +190,9 @@ CREATE TABLE conversation (
   create_time         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_single_key (single_key),
-  UNIQUE KEY uk_group_id (group_id),
-  KEY idx_last_message_time (last_message_time)
+  UNIQUE KEY uk_single_key (single_key), -- 单聊会话幂等：min:max 归一化，A 聊 B 与 B 聊 A 是同一会话
+  UNIQUE KEY uk_group_id (group_id), -- 群聊会话一群一个；单聊 group_id 为 NULL 不冲突（唯一索引允许多个 NULL）
+  KEY idx_last_message_time (last_message_time) -- 后台按最后活跃时间筛排（清理不活跃会话、运营统计），低频
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会话';
 
 CREATE TABLE conversation_member (
@@ -208,9 +208,9 @@ CREATE TABLE conversation_member (
   create_time         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_conversation_user (conversation_id, user_id),
-  KEY idx_user_update (user_id, update_time),
-  KEY idx_conversation_read (conversation_id, last_read_seq)
+  UNIQUE KEY uk_conversation_user (conversation_id, user_id), -- 一会话一成员一行；游标更新定位（conversation_id + user_id）
+  KEY idx_user_update (user_id, update_time), -- 会话列表：我的会话按最近活跃倒序（最高频读路径）
+  KEY idx_conversation_read (conversation_id, last_read_seq) -- 群已读详情：按会话拉各成员已读水位（已读回执）
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会话成员';
 
 CREATE TABLE chat_message (
@@ -227,10 +227,10 @@ CREATE TABLE chat_message (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_conversation_seq (conversation_id, seq),
-  UNIQUE KEY uk_sender_client (sender_id, client_msg_id),
-  KEY idx_conversation_time (conversation_id, send_time),
-  KEY idx_sender_time (sender_id, send_time)
+  UNIQUE KEY uk_conversation_seq (conversation_id, seq), -- 会话内顺序保证 + 并发抢 seq 唯一；离线补拉范围扫零 filesort；首列即未来分片键
+  UNIQUE KEY uk_sender_client (sender_id, client_msg_id), -- 发送幂等：弱网重发同一 client_msg_id 只落一条（带 sender_id 防不同用户撞车）
+  KEY idx_conversation_time (conversation_id, send_time), -- 会话内按时间翻历史消息（时间游标协议）
+  KEY idx_sender_time (sender_id, send_time) -- "我发过的消息"、发送频率风控
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '聊天消息';
 
 CREATE TABLE message_mention (
@@ -241,8 +241,8 @@ CREATE TABLE message_mention (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_message_user (message_id, user_id),
-  KEY idx_user_create (user_id, create_time)
+  UNIQUE KEY uk_message_user (message_id, user_id), -- 一条消息@同一人只记一次
+  KEY idx_user_create (user_id, create_time) -- "@我的消息"通知页，按时间倒序
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息@提醒';
 
 CREATE TABLE event_outbox (
@@ -256,8 +256,8 @@ CREATE TABLE event_outbox (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  KEY idx_status_next (status, next_retry_time),
-  KEY idx_create_time (create_time)
+  KEY idx_status_next (status, next_retry_time), -- 投递扫描器：WHERE status IN (0,2) AND next_retry_time<=now 按时间取批
+  KEY idx_create_time (create_time) -- 已投递事件按时间归档清理
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '事件发件箱';
 
 -- ------------------------------------------------------------
@@ -281,8 +281,8 @@ CREATE TABLE file_info (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_object_key (object_key),
-  KEY idx_uploader_create (uploader_id, create_time)
+  UNIQUE KEY uk_object_key (object_key), -- OSS 路径唯一防覆盖；按 key 定位文件（下载/秒传判断）
+  KEY idx_uploader_create (uploader_id, create_time) -- "我上传的文件"列表，按时间倒序
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '文件信息';
 
 CREATE TABLE sms_record (
@@ -298,7 +298,7 @@ CREATE TABLE sms_record (
   create_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   update_time     DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   PRIMARY KEY (id),
-  KEY idx_phone_create (phone, create_time),
-  KEY idx_ip_create (ip, create_time),
-  KEY idx_request_id (request_id)
+  KEY idx_phone_create (phone, create_time), -- 频控：同一手机号 N 分钟内发送次数
+  KEY idx_ip_create (ip, create_time), -- 风控：同一 IP 刷短信监控
+  KEY idx_request_id (request_id) -- 按 request_id 对账阿里云回执
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '短信发送记录';

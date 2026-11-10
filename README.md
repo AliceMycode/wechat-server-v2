@@ -90,6 +90,7 @@ DROP TABLE IF EXISTS message_receipt;
 - [架构与技术栈设计（评审稿）](docs/01-架构与技术栈.md)
 - [表结构说明（V1 基础 IM）](docs/02-表结构说明.md)
 - [扩容与微服务演进路线](docs/03-扩容与微服务演进路线.md)
+- [索引设计与消息投递问答](docs/04-索引设计与消息投递问答.md)
 - v1 仓库 `docs/design/新工程重设计要点.md`
 
 ## 开发规范
