@@ -23,8 +23,14 @@
     <!-- 以下版本不在 Spring Boot 依赖管理范围内，需要自己声明 -->
     <mybatis-plus.version>3.5.18</mybatis-plus.version>
     <druid.version>1.2.28</druid.version>
-    <!-- Knife4j 不在 Spring Boot 依赖管理范围内，需要自己声明版本 -->
-    <knife4j.version>4.5.0</knife4j.version>
+    <!-- Knife4j-next（社区维护分支 com.baizhukui）：适配 Spring Boot 4 / Spring Framework 7 / springdoc 3.x 的 Knife4j -->
+    <!-- 原版 com.github.xiaoymin Knife4j 4.5.0 在 Boot 4 下不可用（实测三种组合均失败：原版生成文档炸 ControllerAdviceBean、
+         换 springdoc 3.x 炸 getGroupConfigs、换 springdoc 2.10 启动炸 WebMvcProperties 换包），故改用社区分支 knife4j-next -->
+    <knife4j.version>5.8.1</knife4j.version>
+    <!-- 阿里云短信 Dysmsapi SDK 版本 -->
+    <aliyun-dysmsapi.version>4.6.0</aliyun-dysmsapi.version>
+    <!-- 阿里云号码认证/短信认证服务 Dypnsapi SDK 版本 -->
+    <aliyun-dypnsapi.version>2.0.0</aliyun-dypnsapi.version>
   </properties>
 
   <dependencies>
@@ -105,12 +111,27 @@
 
     <!-- ==================== 接口文档 ==================== -->
 
-    <!-- Knife4j：增强版接口文档 UI（doc.html），内置 springdoc-openapi 2.5.0 生成 OpenAPI 3 文档 -->
-    <!-- 注意：knife4j 4.5.0 官方适配 Spring Boot 3.x，在 Boot 4 下属于实测可用方案，升级 knife4j 时需回归验证 -->
+    <!-- Knife4j 接口文档（社区分支 knife4j-next，Boot 4 专用 starter，内含适配好的 springdoc 3.x，访问 /doc.html） -->
     <dependency>
-      <groupId>com.github.xiaoymin</groupId>
-      <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+      <groupId>com.baizhukui</groupId>
+      <artifactId>knife4j-openapi3-boot4-spring-boot-starter</artifactId>
       <version>${knife4j.version}</version>
+    </dependency>
+
+    <!-- ==================== 三方服务 SDK ==================== -->
+
+    <!-- 阿里云短信认证服务 Dypnsapi V2 SDK：SendSmsVerifyCode/CheckSmsVerifyCode（当前主用） -->
+    <dependency>
+      <groupId>com.aliyun</groupId>
+      <artifactId>dypnsapi20170525</artifactId>
+      <version>${aliyun-dypnsapi.version}</version>
+    </dependency>
+
+    <!-- 阿里云短信 Dysmsapi V2 SDK：传统短信验证码 SendSms（预留，sms.mode=dysmsapi 时使用） -->
+    <dependency>
+      <groupId>com.aliyun</groupId>
+      <artifactId>dysmsapi20170525</artifactId>
+      <version>${aliyun-dysmsapi.version}</version>
     </dependency>
 
     <!-- ==================== 工具 ==================== -->

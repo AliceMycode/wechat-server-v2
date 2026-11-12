@@ -10,7 +10,7 @@ IM 服务端 v2
 ## 技术栈
 
 JDK 21 + Spring Boot 4.1.x + MyBatis-Plus 3.5.18 + MySQL 8.0 + Redis 7 + Netty 4.2。
-接口文档使用 Knife4j 4.5（OpenAPI 3，访问 `/doc.html`），底层由其内置的 springdoc-openapi 生成；Spring Boot 4 不使用旧的 Springfox 3.0。
+接口文档使用 Knife4j-next（社区维护分支 `com.baizhukui:knife4j-openapi3-boot4-spring-boot-starter` 5.8.1，专为 Boot 4 + springdoc 3.x 适配，访问 `/doc.html`）；原版 Knife4j 4.5.0 的自动配置与 Spring Framework 7 不兼容（Boot 4 下生成文档即报 NoSuchMethodError），故使用社区分支。
 依赖兼容性见 `docs/01-架构与技术栈.md` 的 4.3 节；Spring AI 2.x / spring-ai-agent-utils 后期接入。
 
 ## 当前部署

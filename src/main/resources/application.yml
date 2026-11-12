@@ -103,20 +103,44 @@ mybatis-plus:
     # 关闭启动时的 MyBatis-Plus banner，保持日志干净
     banner: false
 
-# -------------------- 接口文档（Knife4j） --------------------
-# OpenAPI 3 文档由 knife4j 内置的 springdoc 生成，UI 访问 /doc.html
+# -------------------- 短信 --------------------
+sms:
+  # 渠道模式：mock=本地日志（开发联调） / auth=短信认证服务（当前使用，无需企业资质）
+  # / dysmsapi=传统短信验证码（预留，需企业资质签名）
+  mode: auth
+  # 阿里云 AccessKey：环境变量注入（ALIYUN_SMS_ACCESS_KEY_ID / ALIYUN_SMS_ACCESS_KEY_SECRET），不要写死进 git
+  access-key-id: ${ALIYUN_SMS_ACCESS_KEY_ID:}
+  access-key-secret: ${ALIYUN_SMS_ACCESS_KEY_SECRET:}
+  # auth 模式：短信认证服务控制台"方案管理"里创建的方案名（SchemeName）
+  auth-scheme-name: ${ALIYUN_SMS_AUTH_SCHEME_NAME:}
+  # 签名名称：auth 模式必填（套餐包赠送的签名，如"北京恒创联众"）；dysmsapi 模式同样使用
+  sign-name: ${ALIYUN_SMS_SIGN_NAME:}
+  # 模板 CODE：auth 模式必填（如 SMS_339620449）；dysmsapi 模式同样使用
+  template-code: ${ALIYUN_SMS_TEMPLATE_CODE:}
+  # 同一手机号两次发送最小间隔（秒）
+  send-interval-seconds: 60
+  # 同一手机号每日发送上限
+  daily-limit: 10
+  # 验证码有效期（秒）：auth 模式作为 ValidTime 传给阿里云；mock/dysmsapi 模式用于本地 Redis TTL
+  code-expire-seconds: 300
+
+# -------------------- 接口文档（Knife4j / springdoc） --------------------
+# OpenAPI 3 文档由 springdoc 生成，UI 用 Knife4j 增强，访问 /doc.html
 springdoc:
   api-docs:
     # OpenAPI JSON 的访问路径
     path: /v3/api-docs
     # 是否启用接口文档，生产环境可用 SPRINGDOC_ENABLED=false 关闭
     enabled: ${SPRINGDOC_ENABLED:true}
+  swagger-ui:
+    # 按接口路径排序，便于浏览
+    operations-sorter: method
+    # 默认展开全部接口
+    doc-expansion: none
+
 knife4j:
-  # knife4j 增强功能开关（跟随文档总开关）
-  enable: ${SPRINGDOC_ENABLED:true}
-  setting:
-    # 文档界面语言
-    language: zh-CN
+  # 开启 Knife4j 增强模式（/doc.html 的高级功能：全参数调试、全局参数等）
+  enable: true
 
 # -------------------- Actuator 监控 --------------------
 management:
