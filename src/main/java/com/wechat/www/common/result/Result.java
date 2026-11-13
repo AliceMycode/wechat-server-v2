@@ -12,13 +12,19 @@ import lombok.Data;
 @AllArgsConstructor
 public class Result<T> {
 
-  /** 五位错误码，00000 表示成功 */
+  /**
+   * 五位错误码，00000 表示成功
+   */
   private String code;
 
-  /** 提示信息 */
+  /**
+   * 提示信息
+   */
   private String message;
 
-  /** 业务数据，失败时为 null（Jackson 已配置 non_null，不输出该字段） */
+  /**
+   * 业务数据，失败时为 null（Jackson 已配置 non_null，不输出该字段）
+   */
   private T data;
 
   public static <T> Result<T> ok() {
