@@ -4,12 +4,14 @@ import com.aliyun.dysmsapi20170525.Client;
 import com.aliyun.dysmsapi20170525.models.SendSmsRequest;
 import com.aliyun.dysmsapi20170525.models.SendSmsResponse;
 import com.aliyun.teaopenapi.models.Config;
+import com.wechat.www.common.constant.AliyunSmsConst;
 import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCode;
 import com.wechat.www.common.util.PhoneUtils;
 import com.wechat.www.config.SmsDysmsProperties;
 import com.wechat.www.config.SmsProperties;
+import com.wechat.www.domain.dto.SmsSendResultDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
 import com.wechat.www.manager.SmsCodeChannel;
 import jakarta.annotation.PostConstruct;
@@ -32,15 +34,6 @@ import java.time.Duration;
 @Component
 @ConditionalOnProperty(name = "sms.mode", havingValue = "dysmsapi")
 public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
-
-  /** 阿里云短信服务端点（国内站固定域名） */
-  private static final String ENDPOINT = "dysmsapi.aliyuncs.com";
-
-  /** 渠道业务成功码：阿里云约定 body.code == "OK" 才算发送成功 */
-  private static final String SUCCESS_CODE = "OK";
-
-  /** 验证码取值上界：nextInt(1_000_000) 产生 0~999999，再格式化补齐前导零成 6 位 */
-  private static final int CODE_UPPER_BOUND = 1_000_000;
 
   private final StringRedisTemplate stringRedisTemplate;
 
@@ -74,22 +67,22 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
     Config config = new Config()
         .setAccessKeyId(smsProperties.getAccessKeyId())
         .setAccessKeySecret(smsProperties.getAccessKeySecret())
-        .setEndpoint(ENDPOINT)
+        .setEndpoint(AliyunSmsConst.DYSMS_ENDPOINT)
         // 服务器规约【强制】：调用远程操作必须有超时设置
         .setConnectTimeout(3000)
         .setReadTimeout(5000);
     client = new Client(config);
-    log.info("阿里云短信（Dysmsapi）客户端初始化完成 endpoint={}", ENDPOINT);
+    log.info("阿里云短信（Dysmsapi）客户端初始化完成 endpoint={}", AliyunSmsConst.DYSMS_ENDPOINT);
   }
 
   @Override
-  public String sendCode(String phone, SmsSceneEnum scene) {
+  public SmsSendResultDTO sendCode(String phone, SmsSceneEnum scene) {
     String code = generateCode();
     // 先发后存：发送失败不会在 Redis 留下"看似有效"的验证码
-    String bizId = doSend(phone, scene, code);
+    SmsSendResultDTO result = doSend(phone, scene, code);
     stringRedisTemplate.opsForValue()
         .set(codeKey(scene, phone), code, Duration.ofSeconds(smsProperties.getCodeExpireSeconds()));
-    return bizId;
+    return result;
   }
 
   @Override
@@ -108,9 +101,9 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
    * 渠道真实发送动作。
    *
    * @param code 已生成的验证码明文
-   * @return 渠道回执 ID
+   * @return 渠道回执（bizId + requestId）
    */
-  private String doSend(String phone, SmsSceneEnum scene, String code) {
+  private SmsSendResultDTO doSend(String phone, SmsSceneEnum scene, String code) {
     // 验证码是纯数字，手工拼 JSON 无注入风险；以后模板参数多了再抽 Map + 序列化
     SendSmsRequest request = new SendSmsRequest()
         .setPhoneNumbers(phone)
@@ -121,11 +114,11 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
       SendSmsResponse response = client.sendSms(request);
       String bizCode = response.getBody().getCode();
       // 注意：HTTP 200 不代表发送成功，必须校验业务成功码 "OK"
-      if (!SUCCESS_CODE.equals(bizCode)) {
+      if (!AliyunSmsConst.DYSMS_SUCCESS_CODE.equals(bizCode)) {
         // 错误信息带上渠道错误码（isv.BUSINESS_LIMIT_CONTROL 等）便于排查
         throw new BizException(ErrorCode.SMS_SEND_FAILED, "短信发送失败: " + bizCode);
       }
-      return response.getBody().getBizId();
+      return new SmsSendResultDTO(response.getBody().getBizId(), response.getBody().getRequestId());
     } catch (BizException e) {
       // 业务异常原样抛出，不能被下面的兜底 catch 再包一层
       throw e;
@@ -137,7 +130,7 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
   }
 
   private String generateCode() {
-    return String.format("%06d", secureRandom.nextInt(CODE_UPPER_BOUND));
+    return String.format("%06d", secureRandom.nextInt(AliyunSmsConst.DYSMS_CODE_UPPER_BOUND));
   }
 
   /** 验证码在 Redis 的 key：wechat:sms:code:{scene}:{phone}，与 V1 表设计文档一致 */

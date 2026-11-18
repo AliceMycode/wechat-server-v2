@@ -1,0 +1,42 @@
+package com.wechat.www.common.constant;
+
+/**
+ * 阿里云短信渠道常量。渠道协议约定值统一收敛在此，
+ * 禁止散落在各实现类中（规约【强制】：不允许魔法值直接出现在代码里）。
+ */
+public final class AliyunSmsConst {
+
+  /**
+   * 短信认证服务（Dypnsapi）端点
+   */
+  public static final String AUTH_ENDPOINT = "dypnsapi.aliyuncs.com";
+
+  /**
+   * 传统短信服务（Dysmsapi）端点
+   */
+  public static final String DYSMS_ENDPOINT = "dysmsapi.aliyuncs.com";
+
+  /**
+   * 认证服务核验通过的结果值（阿里云文档约定，不通过为 REJECT）
+   */
+  public static final String AUTH_VERIFY_RESULT_PASS = "PASS";
+
+  /**
+   * 认证服务模板参数里验证码的占位符：阿里云动态生成验证码并托管核验（验证码不经过本服务）
+   */
+  public static final String AUTH_CODE_PLACEHOLDER = "##code##";
+
+  /**
+   * 传统短信业务成功码：阿里云约定 body.code == "OK" 才算发送成功
+   */
+  public static final String DYSMS_SUCCESS_CODE = "OK";
+
+  /**
+   * 传统短信验证码取值上界：nextInt(1_000_000) 产生 0~999999，再格式化补齐前导零成 6 位
+   */
+  public static final int DYSMS_CODE_UPPER_BOUND = 1_000_000;
+
+  private AliyunSmsConst() {
+  }
+
+}

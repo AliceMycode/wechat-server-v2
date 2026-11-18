@@ -2,12 +2,14 @@ package com.wechat.www.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wechat.www.common.constant.RedisKeyConst;
+import com.wechat.www.common.constant.SmsConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCode;
 import com.wechat.www.common.util.PhoneUtils;
 import com.wechat.www.config.SmsProperties;
 import com.wechat.www.domain.SmsRecordDO;
 import com.wechat.www.domain.dto.SendSmsCodeDTO;
+import com.wechat.www.domain.dto.SmsSendResultDTO;
 import com.wechat.www.domain.dto.VerifySmsCodeDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
 import com.wechat.www.manager.SmsCodeChannel;
@@ -32,21 +34,6 @@ import java.time.LocalDate;
 @Service
 @RequiredArgsConstructor
 public class SmsServiceImpl implements SmsService {
-
-  /**
-   * sms_record.send_status：发送成功
-   */
-  private static final int SEND_STATUS_SUCCESS = 1;
-
-  /**
-   * sms_record.send_status：发送失败
-   */
-  private static final int SEND_STATUS_FAIL = 2;
-
-  /**
-   * 同一验证码允许的最大核验失败次数，达到后拒绝核验，直到用户重新获取验证码
-   */
-  private static final int VERIFY_MAX_FAIL_COUNT = 5;
 
   private final SmsRecordMapper smsRecordMapper;
   private final StringRedisTemplate stringRedisTemplate;
@@ -78,21 +65,33 @@ public class SmsServiceImpl implements SmsService {
     }
 
     // ---------- 渠道发送（验证码生成与托管由渠道实现负责，本类不感知） ----------
-    String bizId;
+    // 记录先建壳：create_time/update_time 不赋值，交给数据库 DEFAULT CURRENT_TIMESTAMP 填充
+    SmsRecordDO record = new SmsRecordDO();
+    record.setPhone(phone);
+    record.setScene(scene.getCode());
+    record.setIp(ip);
+    record.setDeviceId(dto.getDeviceId());
+
+    SmsSendResultDTO result;
     try {
-      bizId = smsCodeChannel.sendCode(phone, scene);
+      result = smsCodeChannel.sendCode(phone, scene);
     } catch (BizException e) {
-      saveRecord(phone, scene, null, e
-        .getErrorCode()
-        .getCode(), SEND_STATUS_FAIL, ip);
+      record.setErrorCode(e.getErrorCode().getCode());
+      record.setSendStatus(SmsConst.SEND_STATUS_FAIL);
+      smsRecordMapper.insert(record);
       // 冷却 key 不回滚：失败也占住窗口，避免攻击者借"必失败请求"绕过频控反复打接口
       throw e;
     }
-    saveRecord(phone, scene, bizId, null, SEND_STATUS_SUCCESS, ip);
+    record.setBizId(result.bizId());
+    record.setRequestId(result.requestId());
+    record.setSendStatus(SmsConst.SEND_STATUS_SUCCESS);
+    smsRecordMapper.insert(record);
+
     // 新验证码已生效：清除旧的核验失败计数，尝试次数随验证码重新计算
     stringRedisTemplate.delete(verifyFailKey(scene, phone));
 
-    log.info("短信验证码发送成功 phone={} scene={} bizId={}", PhoneUtils.mask(phone), scene.getCode(), bizId);
+    log.info("短信验证码发送成功 phone={} scene={} bizId={} requestId={}", PhoneUtils.mask(phone),
+        scene.getCode(), result.bizId(), result.requestId());
   }
 
   @Override
@@ -106,7 +105,7 @@ public class SmsServiceImpl implements SmsService {
     String failCount = stringRedisTemplate
       .opsForValue()
       .get(failKey);
-    if (failCount != null && Integer.parseInt(failCount) >= VERIFY_MAX_FAIL_COUNT) {
+    if (failCount != null && Integer.parseInt(failCount) >= SmsConst.VERIFY_MAX_FAIL_COUNT) {
       throw new BizException(ErrorCode.SMS_CODE_ATTEMPT_LIMIT, "验证码错误次数过多，请重新获取");
     }
 
@@ -130,22 +129,6 @@ public class SmsServiceImpl implements SmsService {
    */
   private String verifyFailKey(SmsSceneEnum scene, String phone) {
     return RedisKeyConst.SMS_VERIFY_FAIL_PREFIX + scene.getCode() + ":" + phone;
-  }
-
-  /**
-   * 落一条发送记录。create_time/update_time 不赋值：MP 默认跳过 null 字段，
-   * 交给数据库 DEFAULT CURRENT_TIMESTAMP 填充。
-   */
-  private void saveRecord(String phone, SmsSceneEnum scene, String bizId,
-                          String errorCode, int sendStatus, String ip) {
-    SmsRecordDO record = new SmsRecordDO();
-    record.setPhone(phone);
-    record.setScene(scene.getCode());
-    record.setBizId(bizId);
-    record.setErrorCode(errorCode);
-    record.setSendStatus(sendStatus);
-    record.setIp(ip);
-    smsRecordMapper.insert(record);
   }
 
 }

@@ -1,5 +1,6 @@
 package com.wechat.www.manager;
 
+import com.wechat.www.domain.dto.SmsSendResultDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
 
 /**
@@ -19,9 +20,9 @@ public interface SmsCodeChannel {
    *
    * @param phone 接收手机号
    * @param scene 业务场景，决定使用渠道的哪个方案/模板
-   * @return 渠道回执 ID（BizId），用于对账；失败抛 BizException
+   * @return 渠道回执（bizId + requestId），用于 sms_record 落库与对账；失败抛 BizException
    */
-  String sendCode(String phone, SmsSceneEnum scene);
+  SmsSendResultDTO sendCode(String phone, SmsSceneEnum scene);
 
   /**
    * 核验用户输入的验证码。

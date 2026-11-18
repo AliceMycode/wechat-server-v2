@@ -6,11 +6,13 @@ import com.aliyun.dypnsapi20170525.models.CheckSmsVerifyCodeResponseBody;
 import com.aliyun.dypnsapi20170525.models.SendSmsVerifyCodeRequest;
 import com.aliyun.dypnsapi20170525.models.SendSmsVerifyCodeResponseBody;
 import com.aliyun.teaopenapi.models.Config;
+import com.wechat.www.common.constant.AliyunSmsConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCode;
 import com.wechat.www.common.util.PhoneUtils;
 import com.wechat.www.config.SmsAuthProperties;
 import com.wechat.www.config.SmsProperties;
+import com.wechat.www.domain.dto.SmsSendResultDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
 import com.wechat.www.manager.SmsCodeChannel;
 import jakarta.annotation.PostConstruct;
@@ -37,21 +39,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "sms.mode", havingValue = "auth")
 public class AliyunAuthCodeChannelImpl implements SmsCodeChannel {
-
-  /**
-   * 阿里云号码认证/短信认证服务端点
-   */
-  private static final String ENDPOINT = "dypnsapi.aliyuncs.com";
-
-  /**
-   * 核验通过的结果值（阿里云文档约定，不通过为 REJECT）
-   */
-  private static final String VERIFY_RESULT_PASS = "PASS";
-
-  /**
-   * 模板参数里验证码的占位符：阿里云动态生成验证码并托管核验（验证码不经过本服务）
-   */
-  private static final String CODE_PLACEHOLDER = "##code##";
 
   private final SmsProperties smsProperties;
 
@@ -95,21 +82,21 @@ public class AliyunAuthCodeChannelImpl implements SmsCodeChannel {
     Config config = new Config()
       .setAccessKeyId(smsProperties.getAccessKeyId())
       .setAccessKeySecret(smsProperties.getAccessKeySecret())
-      .setEndpoint(ENDPOINT)
+      .setEndpoint(AliyunSmsConst.AUTH_ENDPOINT)
       // 服务器规约【强制】：调用远程操作必须有超时设置
       .setConnectTimeout(3000)
       .setReadTimeout(5000);
     client = new Client(config);
     log.info("阿里云短信认证服务客户端初始化完成 endpoint={} signName={} schemes={}",
-        ENDPOINT, authProperties.getSignName(), authProperties.getSchemeName());
+        AliyunSmsConst.AUTH_ENDPOINT, authProperties.getSignName(), authProperties.getSchemeName());
   }
 
   @Override
-  public String sendCode(String phone, SmsSceneEnum scene) {
+  public SmsSendResultDTO sendCode(String phone, SmsSceneEnum scene) {
     // 验证码由阿里云生成，这里传手机号、方案名、签名、模板；发送间隔/有效期复用 sms 配置
     long validTime = smsProperties.getCodeExpireSeconds();
     // 模板参数：##code## 占位符由阿里云按 CodeType 规则生成并托管核验；min 为有效期分钟数
-    String templateParam = "{\"code\":\"" + CODE_PLACEHOLDER + "\",\"min\":\"" + (validTime / 60) + "\"}";
+    String templateParam = "{\"code\":\"" + AliyunSmsConst.AUTH_CODE_PLACEHOLDER + "\",\"min\":\"" + (validTime / 60) + "\"}";
     SendSmsVerifyCodeRequest request = new SendSmsVerifyCodeRequest()
       .setPhoneNumber(phone)
       .setSchemeName(schemeNameOf(scene))
@@ -135,8 +122,9 @@ public class AliyunAuthCodeChannelImpl implements SmsCodeChannel {
       String bizId = body
         .getModel()
         .getBizId();
-      log.info("认证服务短信验证码发送成功 phone={} bizId={}", PhoneUtils.mask(phone), bizId);
-      return bizId;
+      log.info("认证服务短信验证码发送成功 phone={} bizId={} requestId={}", PhoneUtils.mask(phone), bizId,
+          body.getRequestId());
+      return new SmsSendResultDTO(bizId, body.getRequestId());
     } catch (BizException e) {
       // 业务异常原样抛出，不能被下面的兜底 catch 再包一层
       throw e;
@@ -163,7 +151,7 @@ public class AliyunAuthCodeChannelImpl implements SmsCodeChannel {
         log.warn("认证服务验证码核验未通过 phone={} code={}", PhoneUtils.mask(phone), body.getCode());
         return false;
       }
-      return VERIFY_RESULT_PASS.equals(body
+      return AliyunSmsConst.AUTH_VERIFY_RESULT_PASS.equals(body
         .getModel()
         .getVerifyResult());
     } catch (Exception e) {
