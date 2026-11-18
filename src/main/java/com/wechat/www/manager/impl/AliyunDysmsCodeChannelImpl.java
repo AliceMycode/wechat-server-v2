@@ -4,28 +4,34 @@ import com.aliyun.dysmsapi20170525.Client;
 import com.aliyun.dysmsapi20170525.models.SendSmsRequest;
 import com.aliyun.dysmsapi20170525.models.SendSmsResponse;
 import com.aliyun.teaopenapi.models.Config;
+import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCode;
 import com.wechat.www.common.util.PhoneUtils;
+import com.wechat.www.config.SmsDysmsProperties;
 import com.wechat.www.config.SmsProperties;
 import com.wechat.www.domain.enums.SmsSceneEnum;
+import com.wechat.www.manager.SmsCodeChannel;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.security.SecureRandom;
+import java.time.Duration;
+
 /**
  * 短信渠道阿里云"传统短信验证码"实现（Dysmsapi SDK，sms.mode=dysmsapi 时生效）。
  *
  * <p>当前为预留实现：签名需要企业资质审核，个人主体暂不可用；
  * 将来资质下来后把 sms.mode 改为 dysmsapi 即可切换，业务代码零改动。
- * 验证码由本服务生成（基类负责），渠道只负责发送，核验走 Redis（基类负责）。
+ * 验证码由本服务生成并托管在 Redis（生成、发送、核验都在本类），渠道只负责把码发出去。
  */
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "sms.mode", havingValue = "dysmsapi")
-public class AliyunDysmsCodeChannelImpl extends AbstractRedisCodeChannel {
+public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
 
   /** 阿里云短信服务端点（国内站固定域名） */
   private static final String ENDPOINT = "dysmsapi.aliyuncs.com";
@@ -33,14 +39,27 @@ public class AliyunDysmsCodeChannelImpl extends AbstractRedisCodeChannel {
   /** 渠道业务成功码：阿里云约定 body.code == "OK" 才算发送成功 */
   private static final String SUCCESS_CODE = "OK";
 
+  /** 验证码取值上界：nextInt(1_000_000) 产生 0~999999，再格式化补齐前导零成 6 位 */
+  private static final int CODE_UPPER_BOUND = 1_000_000;
+
+  private final StringRedisTemplate stringRedisTemplate;
+
   private final SmsProperties smsProperties;
+
+  /** 传统短信专属配置（签名/模板） */
+  private final SmsDysmsProperties dysmsProperties;
+
+  /** SecureRandom 实例线程安全可复用；验证码是安全敏感数据，不用 Random/ThreadLocalRandom */
+  private final SecureRandom secureRandom = new SecureRandom();
 
   /** SDK 客户端线程安全，应用内复用一个实例即可 */
   private Client client;
 
-  public AliyunDysmsCodeChannelImpl(StringRedisTemplate stringRedisTemplate, SmsProperties smsProperties) {
-    super(stringRedisTemplate, smsProperties);
+  public AliyunDysmsCodeChannelImpl(StringRedisTemplate stringRedisTemplate, SmsProperties smsProperties,
+      SmsDysmsProperties dysmsProperties) {
+    this.stringRedisTemplate = stringRedisTemplate;
     this.smsProperties = smsProperties;
+    this.dysmsProperties = dysmsProperties;
   }
 
   /**
@@ -64,12 +83,39 @@ public class AliyunDysmsCodeChannelImpl extends AbstractRedisCodeChannel {
   }
 
   @Override
-  protected String doSend(String phone, SmsSceneEnum scene, String code) {
+  public String sendCode(String phone, SmsSceneEnum scene) {
+    String code = generateCode();
+    // 先发后存：发送失败不会在 Redis 留下"看似有效"的验证码
+    String bizId = doSend(phone, scene, code);
+    stringRedisTemplate.opsForValue()
+        .set(codeKey(scene, phone), code, Duration.ofSeconds(smsProperties.getCodeExpireSeconds()));
+    return bizId;
+  }
+
+  @Override
+  public boolean verifyCode(String phone, SmsSceneEnum scene, String code) {
+    String key = codeKey(scene, phone);
+    String saved = stringRedisTemplate.opsForValue().get(key);
+    if (saved == null || !saved.equals(code)) {
+      return false;
+    }
+    // 核验通过立即作废，防重放；防暴力尝试（错误次数限制）由调用方在业务层实现
+    stringRedisTemplate.delete(key);
+    return true;
+  }
+
+  /**
+   * 渠道真实发送动作。
+   *
+   * @param code 已生成的验证码明文
+   * @return 渠道回执 ID
+   */
+  private String doSend(String phone, SmsSceneEnum scene, String code) {
     // 验证码是纯数字，手工拼 JSON 无注入风险；以后模板参数多了再抽 Map + 序列化
     SendSmsRequest request = new SendSmsRequest()
         .setPhoneNumbers(phone)
-        .setSignName(smsProperties.getSignName())
-        .setTemplateCode(smsProperties.getTemplateCode())
+        .setSignName(dysmsProperties.getSignName())
+        .setTemplateCode(dysmsProperties.getTemplateCode())
         .setTemplateParam("{\"code\":\"" + code + "\"}");
     try {
       SendSmsResponse response = client.sendSms(request);
@@ -88,6 +134,15 @@ public class AliyunDysmsCodeChannelImpl extends AbstractRedisCodeChannel {
       log.error("Dysmsapi 短信发送异常 phone={}", PhoneUtils.mask(phone), e);
       throw new BizException(ErrorCode.SMS_SEND_FAILED, "短信发送失败，请稍后再试");
     }
+  }
+
+  private String generateCode() {
+    return String.format("%06d", secureRandom.nextInt(CODE_UPPER_BOUND));
+  }
+
+  /** 验证码在 Redis 的 key：wechat:sms:code:{scene}:{phone}，与 V1 表设计文档一致 */
+  private String codeKey(SmsSceneEnum scene, String phone) {
+    return RedisKeyConst.SMS_CODE_PREFIX + scene.getCode() + ":" + phone;
   }
 
 }

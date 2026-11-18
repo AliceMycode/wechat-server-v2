@@ -7,7 +7,6 @@ import com.wechat.www.domain.enums.SmsSceneEnum;
  *
  * <p>不同渠道模式的差异被隔离在实现类里，Service 层零感知：
  * <ul>
- *   <li>mock：本地日志模式，验证码打日志、Redis 存取（开发联调用）</li>
  *   <li>auth：短信认证服务，验证码由阿里云生成、发送、托管核验（无需企业资质）</li>
  *   <li>dysmsapi：传统短信验证码，服务端生成验证码、渠道发送、Redis 核验（预留，需企业资质签名）</li>
  * </ul>

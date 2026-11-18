@@ -105,24 +105,44 @@ mybatis-plus:
 
 # -------------------- 短信 --------------------
 sms:
-  # 渠道模式：mock=本地日志（开发联调） / auth=短信认证服务（当前使用，无需企业资质）
+  # 渠道模式：auth=短信认证服务（当前使用，无需企业资质）
   # / dysmsapi=传统短信验证码（预留，需企业资质签名）
   mode: auth
   # 阿里云 AccessKey：环境变量注入（ALIYUN_SMS_ACCESS_KEY_ID / ALIYUN_SMS_ACCESS_KEY_SECRET），不要写死进 git
   access-key-id: ${ALIYUN_SMS_ACCESS_KEY_ID:}
   access-key-secret: ${ALIYUN_SMS_ACCESS_KEY_SECRET:}
-  # auth 模式：短信认证服务控制台"方案管理"里创建的方案名（SchemeName）
-  auth-scheme-name: ${ALIYUN_SMS_AUTH_SCHEME_NAME:}
-  # 签名名称：auth 模式必填（套餐包赠送的签名，如"北京恒创联众"）；dysmsapi 模式同样使用
-  sign-name: ${ALIYUN_SMS_SIGN_NAME:}
-  # 模板 CODE：auth 模式必填（如 SMS_339620449）；dysmsapi 模式同样使用
-  template-code: ${ALIYUN_SMS_TEMPLATE_CODE:}
   # 同一手机号两次发送最小间隔（秒）
   send-interval-seconds: 60
   # 同一手机号每日发送上限
   daily-limit: 10
-  # 验证码有效期（秒）：auth 模式作为 ValidTime 传给阿里云；mock/dysmsapi 模式用于本地 Redis TTL
+  # 验证码有效期（秒）：auth 模式作为 ValidTime 传给阿里云；dysmsapi 模式用于本地 Redis TTL
   code-expire-seconds: 300
+
+  # auth 模式（短信认证服务）专属：赠送签名 + 赠送模板（100001 格式）
+  auth:
+    # 方案名（SchemeName）按场景配置：阿里云按方案隔离验证码，不同场景互不覆盖（实测验证）
+    # 方案名任意字符串即可，无需控制台预先创建
+    scheme-name:
+      register: ${ALIYUN_SMS_AUTH_SCHEME_REGISTER:register}
+      login: ${ALIYUN_SMS_AUTH_SCHEME_LOGIN:login}
+      reset: ${ALIYUN_SMS_AUTH_SCHEME_RESET:reset}
+    # 签名名称，必填（SendSmsVerifyCode 实测 400 强校验），如"北京恒创联众"
+    sign-name: ${ALIYUN_SMS_AUTH_SIGN_NAME:}
+    # 模板 CODE，必填（SendSmsVerifyCode 实测 400 强校验），如 100001
+    template-code: ${ALIYUN_SMS_AUTH_TEMPLATE_CODE:}
+    # 号码国家编码，发送/核验两侧一致，阿里云目前仅支持国内（86）
+    country-code: 86
+    # 验证码类型：1-纯数字 2-纯大写 3-纯小写 4-大小写混合 5-数字+大写 6-数字+小写 7-数字+大小写
+    code-type: 1
+    # 验证码长度，4～8 位
+    code-length: 6
+
+  # dysmsapi 模式（传统短信验证码）专属：自定义签名（需企业资质）+ 审核模板（SMS_xxx 格式）
+  dysms:
+    # 签名名称，dysmsapi 模式必填
+    sign-name: ${ALIYUN_SMS_DYSMS_SIGN_NAME:}
+    # 模板 CODE，dysmsapi 模式必填，如 SMS_339620449
+    template-code: ${ALIYUN_SMS_DYSMS_TEMPLATE_CODE:}
 
 # -------------------- 接口文档（Knife4j / springdoc） --------------------
 # OpenAPI 3 文档由 springdoc 生成，UI 用 Knife4j 增强，访问 /doc.html

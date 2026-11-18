@@ -2,6 +2,7 @@ package com.wechat.www.controller;
 
 import com.wechat.www.common.result.Result;
 import com.wechat.www.domain.dto.SendSmsCodeDTO;
+import com.wechat.www.domain.dto.VerifySmsCodeDTO;
 import com.wechat.www.service.SmsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,6 +32,16 @@ public class SmsController {
   @PostMapping("/code")
   public Result<Void> sendCode(@Valid @RequestBody SendSmsCodeDTO dto, HttpServletRequest request) {
     smsService.sendCode(dto, getClientIp(request));
+    return Result.ok();
+  }
+
+  /**
+   * 核验短信验证码。
+   */
+  @Operation(summary = "核验短信验证码")
+  @PostMapping("/verify")
+  public Result<Void> verifyCode(@Valid @RequestBody VerifySmsCodeDTO dto) {
+    smsService.verifyCode(dto);
     return Result.ok();
   }
 

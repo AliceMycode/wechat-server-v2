@@ -5,7 +5,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * 短信配置项（application.yml 的 sms.* 前缀）。
+ * 短信公共配置项（application.yml 的 sms.* 前缀）。
+ *
+ * <p>只放各渠道模式共享的配置；模式专属配置拆分在
+ * {@link SmsAuthProperties}（sms.auth.*）和 {@link SmsDysmsProperties}（sms.dysms.*），
+ * 因为认证服务与传统短信的签名/模板取值体系不同（赠送签名+100001 模板 vs 自定义签名+SMS_xxx 模板）。
  */
 @Data
 @Component
@@ -13,33 +17,34 @@ import org.springframework.stereotype.Component;
 public class SmsProperties {
 
   /**
-   * 渠道模式：mock=本地日志（开发联调） / auth=短信认证服务（当前使用，无需企业资质）
+   * 渠道模式：auth=短信认证服务（当前使用，无需企业资质）
    * / dysmsapi=传统短信验证码（预留，需企业资质签名）
    */
-  private String mode = "mock";
+  private String mode = "auth";
 
-  /** 阿里云 AccessKey ID（环境变量 ALIYUN_SMS_ACCESS_KEY_ID 注入，禁止写死提交 git） */
+  /**
+   * 阿里云 AccessKey ID（环境变量 ALIYUN_SMS_ACCESS_KEY_ID 注入，禁止写死提交 git）
+   */
   private String accessKeyId;
 
-  /** 阿里云 AccessKey Secret */
+  /**
+   * 阿里云 AccessKey Secret
+   */
   private String accessKeySecret;
 
-  /** auth 模式：短信认证服务控制台创建的方案名（SchemeName） */
-  private String authSchemeName;
-
-  /** dysmsapi 模式（预留）：短信签名 */
-  private String signName;
-
-  /** dysmsapi 模式（预留）：验证码模板 CODE */
-  private String templateCode;
-
-  /** 同一手机号两次发送的最小间隔（秒） */
+  /**
+   * 同一手机号两次发送的最小间隔（秒）
+   */
   private int sendIntervalSeconds = 60;
 
-  /** 同一手机号每天最多发送条数 */
+  /**
+   * 同一手机号每天最多发送条数
+   */
   private int dailyLimit = 10;
 
-  /** 验证码有效期（秒）：仅 mock/dysmsapi 模式生效，auth 模式有效期在控制台方案里配置 */
+  /**
+   * 验证码有效期（秒）：auth 模式作为 ValidTime 传给阿里云；dysmsapi 模式用于本地 Redis TTL
+   */
   private int codeExpireSeconds = 300;
 
 }
