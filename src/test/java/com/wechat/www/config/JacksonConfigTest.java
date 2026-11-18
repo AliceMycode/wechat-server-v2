@@ -2,9 +2,11 @@ package com.wechat.www.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.wechat.www.manager.SmsCodeChannel;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -12,6 +14,12 @@ import tools.jackson.databind.ObjectMapper;
  */
 @SpringBootTest
 class JacksonConfigTest {
+
+  /**
+   * 上下文装配需要短信渠道 bean，测试环境无 sms.mode 配置，用 mock 顶替（本测试不涉及发送）。
+   */
+  @MockitoBean
+  private SmsCodeChannel smsCodeChannel;
 
   @Autowired
   private ObjectMapper objectMapper;
