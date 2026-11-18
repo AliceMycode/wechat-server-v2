@@ -10,8 +10,12 @@ public final class PhoneUtils {
 
   /**
    * 日志脱敏：138****8000（安全规约：日志中的用户敏感信息需脱敏）。
+   * 入参为 null 时返回空串，避免日志脱敏本身抛 NPE。
    */
   public static String mask(String phone) {
+    if (phone == null) {
+      return "";
+    }
     return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
   }
 
