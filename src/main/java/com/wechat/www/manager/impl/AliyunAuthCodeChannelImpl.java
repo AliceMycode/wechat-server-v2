@@ -7,8 +7,9 @@ import com.aliyun.dypnsapi20170525.models.SendSmsVerifyCodeRequest;
 import com.aliyun.dypnsapi20170525.models.SendSmsVerifyCodeResponseBody;
 import com.aliyun.teaopenapi.models.Config;
 import com.wechat.www.common.constant.AliyunSmsConst;
+import com.wechat.www.common.constant.SmsConst;
 import com.wechat.www.common.exception.BizException;
-import com.wechat.www.common.exception.ErrorCode;
+import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.util.PhoneUtils;
 import com.wechat.www.config.SmsAuthProperties;
 import com.wechat.www.config.SmsProperties;
@@ -96,7 +97,8 @@ public class AliyunAuthCodeChannelImpl implements SmsCodeChannel {
     // 验证码由阿里云生成，这里传手机号、方案名、签名、模板；发送间隔/有效期复用 sms 配置
     long validTime = smsProperties.getCodeExpireSeconds();
     // 模板参数：##code## 占位符由阿里云按 CodeType 规则生成并托管核验；min 为有效期分钟数
-    String templateParam = "{\"code\":\"" + AliyunSmsConst.AUTH_CODE_PLACEHOLDER + "\",\"min\":\"" + (validTime / 60) + "\"}";
+    String templateParam = "{\"code\":\"" + AliyunSmsConst.AUTH_CODE_PLACEHOLDER + "\",\"min\":\""
+        + (validTime / SmsConst.SECONDS_PER_MINUTE) + "\"}";
     SendSmsVerifyCodeRequest request = new SendSmsVerifyCodeRequest()
       .setPhoneNumber(phone)
       .setSchemeName(schemeNameOf(scene))
@@ -117,7 +119,7 @@ public class AliyunAuthCodeChannelImpl implements SmsCodeChannel {
       // 注意：HTTP 200 不代表发送成功，必须校验业务 success 标志
       if (!Boolean.TRUE.equals(body.getSuccess())) {
         // 错误信息带上渠道错误码（isv.* 等）便于排查
-        throw new BizException(ErrorCode.SMS_SEND_FAILED, "短信发送失败: " + body.getCode());
+        throw new BizException(ErrorCodeEnum.SMS_SEND_FAILED, "短信发送失败: " + body.getCode());
       }
       String bizId = body
         .getModel()
@@ -131,7 +133,7 @@ public class AliyunAuthCodeChannelImpl implements SmsCodeChannel {
     } catch (Exception e) {
       // SDK 方法声明 throws Exception（网络超时、鉴权失败等），统一转义为业务异常
       log.error("认证服务短信验证码发送异常 phone={}", PhoneUtils.mask(phone), e);
-      throw new BizException(ErrorCode.SMS_SEND_FAILED, "短信发送失败，请稍后再试");
+      throw new BizException(ErrorCodeEnum.SMS_SEND_FAILED, "短信发送失败，请稍后再试");
     }
   }
 
@@ -157,7 +159,7 @@ public class AliyunAuthCodeChannelImpl implements SmsCodeChannel {
     } catch (Exception e) {
       // 渠道调用异常属于系统错误，不能伪装成"验证码错误"误导用户
       log.error("认证服务验证码核验异常 phone={}", PhoneUtils.mask(phone), e);
-      throw new BizException(ErrorCode.SYSTEM_ERROR, "验证码核验失败，请稍后再试");
+      throw new BizException(ErrorCodeEnum.SYSTEM_ERROR, "验证码核验失败，请稍后再试");
     }
   }
 

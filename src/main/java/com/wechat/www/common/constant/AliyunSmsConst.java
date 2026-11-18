@@ -36,6 +36,11 @@ public final class AliyunSmsConst {
    */
   public static final int DYSMS_CODE_UPPER_BOUND = 1_000_000;
 
+  /**
+   * 传统短信验证码格式：6 位数字，前导零补齐；位数必须与 DYSMS_CODE_UPPER_BOUND 保持一致
+   */
+  public static final String DYSMS_CODE_FORMAT = "%06d";
+
   private AliyunSmsConst() {
   }
 

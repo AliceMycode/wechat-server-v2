@@ -1,6 +1,6 @@
 package com.wechat.www.common.result;
 
-import com.wechat.www.common.exception.ErrorCode;
+import com.wechat.www.common.exception.ErrorCodeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -28,14 +28,14 @@ public class Result<T> {
   private T data;
 
   public static <T> Result<T> ok() {
-    return new Result<>(ErrorCode.SUCCESS.getCode(), ErrorCode.SUCCESS.getMessage(), null);
+    return new Result<>(ErrorCodeEnum.SUCCESS.getCode(), ErrorCodeEnum.SUCCESS.getMessage(), null);
   }
 
   public static <T> Result<T> ok(T data) {
-    return new Result<>(ErrorCode.SUCCESS.getCode(), ErrorCode.SUCCESS.getMessage(), data);
+    return new Result<>(ErrorCodeEnum.SUCCESS.getCode(), ErrorCodeEnum.SUCCESS.getMessage(), data);
   }
 
-  public static <T> Result<T> fail(ErrorCode errorCode, String message) {
+  public static <T> Result<T> fail(ErrorCodeEnum errorCode, String message) {
     return new Result<>(errorCode.getCode(), message, null);
   }
 

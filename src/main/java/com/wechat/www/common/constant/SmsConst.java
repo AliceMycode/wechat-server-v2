@@ -21,6 +21,16 @@ public final class SmsConst {
    */
   public static final int VERIFY_MAX_FAIL_COUNT = 5;
 
+  /**
+   * 发送冷却 key 的占位值：SETNX 只关心 key 是否存在，value 无业务含义
+   */
+  public static final String SEND_LIMIT_PLACEHOLDER = "1";
+
+  /**
+   * 每分钟秒数：验证码有效期按秒配置，渠道模板的分钟参数由它换算
+   */
+  public static final int SECONDS_PER_MINUTE = 60;
+
   private SmsConst() {
   }
 

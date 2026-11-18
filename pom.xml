@@ -11,7 +11,7 @@
     <relativePath/> <!-- 从 Maven 仓库解析父 POM，不在本地目录查找 -->
   </parent>
 
-  <groupId>wechat</groupId>
+  <groupId>com.wechat</groupId>
   <artifactId>wechat-server-v2</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>wechat-server-v2</name>

@@ -1,7 +1,7 @@
 package com.wechat.www.domain.enums;
 
 import com.wechat.www.common.exception.BizException;
-import com.wechat.www.common.exception.ErrorCode;
+import com.wechat.www.common.exception.ErrorCodeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -36,7 +36,7 @@ public enum SmsSceneEnum {
         return scene;
       }
     }
-    throw new BizException(ErrorCode.SCENE_INVALID, "不支持的场景类型");
+    throw new BizException(ErrorCodeEnum.SCENE_INVALID, "不支持的场景类型");
   }
 
 }

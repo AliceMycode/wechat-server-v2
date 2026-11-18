@@ -24,7 +24,7 @@ public class SmsAuthProperties {
    * <p>阿里云按方案隔离验证码：不同场景用不同方案名，验证码互不覆盖（实测验证：
    * 方案 A 的码在方案 B 核验返回 400，反之亦然）。方案名任意字符串即可，无需控制台预先创建。
    */
-  private Map<String, String> schemeName = new HashMap<>();
+  private Map<String, String> schemeName = new HashMap<>(16);
 
   /**
    * 号码国家编码，发送/核验两侧必须一致。阿里云目前仅支持国内发送，默认 86

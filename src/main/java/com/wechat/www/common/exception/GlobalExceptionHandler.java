@@ -39,10 +39,10 @@ public class GlobalExceptionHandler {
     FieldError fieldError = e
       .getBindingResult()
       .getFieldError();
-    String message = fieldError == null ? ErrorCode.PARAM_INVALID.getMessage() : fieldError.getDefaultMessage();
+    String message = fieldError == null ? ErrorCodeEnum.PARAM_INVALID.getMessage() : fieldError.getDefaultMessage();
     return ResponseEntity
       .badRequest()
-      .body(Result.fail(ErrorCode.PARAM_INVALID, message));
+      .body(Result.fail(ErrorCodeEnum.PARAM_INVALID, message));
   }
 
   /**
@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Result<Void>> handleNotReadable(HttpMessageNotReadableException e) {
     return ResponseEntity
       .badRequest()
-      .body(Result.fail(ErrorCode.JSON_PARSE_ERROR, ErrorCode.JSON_PARSE_ERROR.getMessage()));
+      .body(Result.fail(ErrorCodeEnum.JSON_PARSE_ERROR, ErrorCodeEnum.JSON_PARSE_ERROR.getMessage()));
   }
 
   /**
@@ -74,7 +74,7 @@ public class GlobalExceptionHandler {
     log.error("系统异常", e);
     return ResponseEntity
       .internalServerError()
-      .body(Result.fail(ErrorCode.SYSTEM_ERROR, ErrorCode.SYSTEM_ERROR.getMessage()));
+      .body(Result.fail(ErrorCodeEnum.SYSTEM_ERROR, ErrorCodeEnum.SYSTEM_ERROR.getMessage()));
   }
 
 }

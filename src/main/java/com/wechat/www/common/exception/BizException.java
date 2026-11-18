@@ -12,9 +12,9 @@ public class BizException extends RuntimeException {
   /**
    * 错误码
    */
-  private final ErrorCode errorCode;
+  private final ErrorCodeEnum errorCode;
 
-  public BizException(ErrorCode errorCode) {
+  public BizException(ErrorCodeEnum errorCode) {
     super(errorCode.getMessage());
     this.errorCode = errorCode;
   }
@@ -22,7 +22,7 @@ public class BizException extends RuntimeException {
   /**
    * @param message 覆盖默认提示，给用户更具体的文案
    */
-  public BizException(ErrorCode errorCode, String message) {
+  public BizException(ErrorCodeEnum errorCode, String message) {
     super(message);
     this.errorCode = errorCode;
   }

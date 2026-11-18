@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.constant.SmsConst;
 import com.wechat.www.common.exception.BizException;
-import com.wechat.www.common.exception.ErrorCode;
+import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.util.PhoneUtils;
 import com.wechat.www.config.SmsProperties;
 import com.wechat.www.domain.SmsRecordDO;
@@ -49,9 +49,9 @@ public class SmsServiceImpl implements SmsService {
     String limitKey = RedisKeyConst.SMS_LIMIT_PREFIX + scene.getCode() + ":" + phone;
     Boolean acquired = stringRedisTemplate
       .opsForValue()
-      .setIfAbsent(limitKey, "1", Duration.ofSeconds(smsProperties.getSendIntervalSeconds()));
+      .setIfAbsent(limitKey, SmsConst.SEND_LIMIT_PLACEHOLDER, Duration.ofSeconds(smsProperties.getSendIntervalSeconds()));
     if (!Boolean.TRUE.equals(acquired)) {
-      throw new BizException(ErrorCode.SMS_SEND_FREQUENT, "发送太频繁，请稍后再试");
+      throw new BizException(ErrorCodeEnum.SMS_SEND_FREQUENT, "发送太频繁，请稍后再试");
     }
 
     // ---------- 频控二：当日发送上限。走 idx_phone_create (phone, create_time) 索引 ----------
@@ -61,7 +61,7 @@ public class SmsServiceImpl implements SmsService {
         .now()
         .atStartOfDay()));
     if (todayCount >= smsProperties.getDailyLimit()) {
-      throw new BizException(ErrorCode.SMS_SEND_FREQUENT, "今日发送次数已达上限");
+      throw new BizException(ErrorCodeEnum.SMS_SEND_FREQUENT, "今日发送次数已达上限");
     }
 
     // ---------- 渠道发送（验证码生成与托管由渠道实现负责，本类不感知） ----------
@@ -106,7 +106,7 @@ public class SmsServiceImpl implements SmsService {
       .opsForValue()
       .get(failKey);
     if (failCount != null && Integer.parseInt(failCount) >= SmsConst.VERIFY_MAX_FAIL_COUNT) {
-      throw new BizException(ErrorCode.SMS_CODE_ATTEMPT_LIMIT, "验证码错误次数过多，请重新获取");
+      throw new BizException(ErrorCodeEnum.SMS_CODE_ATTEMPT_LIMIT, "验证码错误次数过多，请重新获取");
     }
 
     // 渠道核验：auth 调阿里云校验，dysmsapi 比对 Redis；通过时渠道侧自行作废验证码防重放
@@ -116,7 +116,7 @@ public class SmsServiceImpl implements SmsService {
         .opsForValue()
         .increment(failKey);
       stringRedisTemplate.expire(failKey, Duration.ofSeconds(smsProperties.getCodeExpireSeconds()));
-      throw new BizException(ErrorCode.SMS_CODE_ERROR, "验证码错误或已过期");
+      throw new BizException(ErrorCodeEnum.SMS_CODE_ERROR, "验证码错误或已过期");
     }
 
     // 核验通过：清除失败计数，不影响该号码下一次验证码

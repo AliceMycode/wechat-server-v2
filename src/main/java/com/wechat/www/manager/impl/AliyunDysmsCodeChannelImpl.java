@@ -7,7 +7,7 @@ import com.aliyun.teaopenapi.models.Config;
 import com.wechat.www.common.constant.AliyunSmsConst;
 import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.exception.BizException;
-import com.wechat.www.common.exception.ErrorCode;
+import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.util.PhoneUtils;
 import com.wechat.www.config.SmsDysmsProperties;
 import com.wechat.www.config.SmsProperties;
@@ -116,7 +116,7 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
       // 注意：HTTP 200 不代表发送成功，必须校验业务成功码 "OK"
       if (!AliyunSmsConst.DYSMS_SUCCESS_CODE.equals(bizCode)) {
         // 错误信息带上渠道错误码（isv.BUSINESS_LIMIT_CONTROL 等）便于排查
-        throw new BizException(ErrorCode.SMS_SEND_FAILED, "短信发送失败: " + bizCode);
+        throw new BizException(ErrorCodeEnum.SMS_SEND_FAILED, "短信发送失败: " + bizCode);
       }
       return new SmsSendResultDTO(response.getBody().getBizId(), response.getBody().getRequestId());
     } catch (BizException e) {
@@ -125,12 +125,12 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
     } catch (Exception e) {
       // SDK 方法声明 throws Exception（网络超时、鉴权失败等），统一转义为业务异常
       log.error("Dysmsapi 短信发送异常 phone={}", PhoneUtils.mask(phone), e);
-      throw new BizException(ErrorCode.SMS_SEND_FAILED, "短信发送失败，请稍后再试");
+      throw new BizException(ErrorCodeEnum.SMS_SEND_FAILED, "短信发送失败，请稍后再试");
     }
   }
 
   private String generateCode() {
-    return String.format("%06d", secureRandom.nextInt(AliyunSmsConst.DYSMS_CODE_UPPER_BOUND));
+    return String.format(AliyunSmsConst.DYSMS_CODE_FORMAT, secureRandom.nextInt(AliyunSmsConst.DYSMS_CODE_UPPER_BOUND));
   }
 
   /** 验证码在 Redis 的 key：wechat:sms:code:{scene}:{phone}，与 V1 表设计文档一致 */
