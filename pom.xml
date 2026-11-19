@@ -134,6 +134,15 @@
       <version>${aliyun-dysmsapi.version}</version>
     </dependency>
 
+    <!-- ==================== 安全 ==================== -->
+
+    <!-- Spring Security 加密模块：只用 BCryptPasswordEncoder 做密码哈希，
+         不引入 spring-boot-starter-security，因此不会启用认证过滤链 -->
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
+    </dependency>
+
     <!-- ==================== 工具 ==================== -->
 
     <!-- Lombok：用注解生成 getter/setter/构造器，只在编译期生效，不会打进最终 jar -->

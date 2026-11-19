@@ -49,7 +49,8 @@ public class SmsServiceImpl implements SmsService {
     String limitKey = RedisKeyConst.SMS_LIMIT_PREFIX + scene.getCode() + ":" + phone;
     Boolean acquired = stringRedisTemplate
       .opsForValue()
-      .setIfAbsent(limitKey, SmsConst.SEND_LIMIT_PLACEHOLDER, Duration.ofSeconds(smsProperties.getSendIntervalSeconds()));
+      .setIfAbsent(limitKey, SmsConst.SEND_LIMIT_PLACEHOLDER,
+        Duration.ofSeconds(smsProperties.getSendIntervalSeconds()));
     if (!Boolean.TRUE.equals(acquired)) {
       throw new BizException(ErrorCodeEnum.SMS_SEND_FREQUENT, "发送太频繁，请稍后再试");
     }
@@ -76,7 +77,9 @@ public class SmsServiceImpl implements SmsService {
     try {
       result = smsCodeChannel.sendCode(phone, scene);
     } catch (BizException e) {
-      record.setErrorCode(e.getErrorCode().getCode());
+      record.setErrorCode(e
+        .getErrorCode()
+        .getCode());
       record.setSendStatus(SmsConst.SEND_STATUS_FAIL);
       smsRecordMapper.insert(record);
       // 冷却 key 不回滚：失败也占住窗口，避免攻击者借"必失败请求"绕过频控反复打接口
@@ -87,11 +90,15 @@ public class SmsServiceImpl implements SmsService {
     record.setSendStatus(SmsConst.SEND_STATUS_SUCCESS);
     smsRecordMapper.insert(record);
 
-    // 新验证码已生效：清除旧的核验失败计数，尝试次数随验证码重新计算
-    stringRedisTemplate.delete(verifyFailKey(scene, phone));
+    // 新验证码已生效：失败计数清零，同时把 TTL 锚定在本次发送时刻。
+    // 不能在核验失败时才设 TTL —— 那样不断重试会不断续期，计数可能活得比验证码还久。
+    stringRedisTemplate
+      .opsForValue()
+      .set(verifyFailKey(scene, phone), SmsConst.VERIFY_FAIL_INIT_VALUE,
+        Duration.ofSeconds(smsProperties.getCodeExpireSeconds()));
 
     log.info("短信验证码发送成功 phone={} scene={} bizId={} requestId={}", PhoneUtils.mask(phone),
-        scene.getCode(), result.bizId(), result.requestId());
+      scene.getCode(), result.bizId(), result.requestId());
   }
 
   @Override
@@ -100,23 +107,26 @@ public class SmsServiceImpl implements SmsService {
     String phone = dto.getPhone();
     String failKey = verifyFailKey(scene, phone);
 
-    // 先查失败次数，达到上限直接拒绝，不再调用渠道：
-    // auth 模式验证码托管在阿里云，本地无法主动作废，只能在入口拦截，直到用户重新获取验证码
-    String failCount = stringRedisTemplate
+    // 计数 key 不存在，说明没有处于有效期的验证码（从未发送或已过期），直接拒绝。
+    // 注意这里只判断"窗口是否还开着"，不读旧值做上限判断：
+    // 读旧值再递增是两条命令，并发下多个请求会同时读到 4 而全部放行。
+    if (!Boolean.TRUE.equals(stringRedisTemplate.hasKey(failKey))) {
+      throw new BizException(ErrorCodeEnum.SMS_CODE_ERROR, "验证码已过期");
+    }
+
+    // 先占坑再验证：INCR 是单命令原子操作，返回的就是本次尝试的序号，
+    // 并发请求各自拿到不同序号，超出上限的当场拒绝，不存在"一起读到 4"的窗口。
+    // auth 模式验证码托管在阿里云，本地无法主动作废，只能在入口拦截，直到用户重新获取验证码。
+    Long attempt = stringRedisTemplate
       .opsForValue()
-      .get(failKey);
-    if (failCount != null && Integer.parseInt(failCount) >= SmsConst.VERIFY_MAX_FAIL_COUNT) {
+      .increment(failKey);
+    if (attempt != null && attempt > SmsConst.VERIFY_MAX_FAIL_COUNT) {
       throw new BizException(ErrorCodeEnum.SMS_CODE_ATTEMPT_LIMIT, "验证码错误次数过多，请重新获取");
     }
 
     // 渠道核验：auth 调阿里云校验，dysmsapi 比对 Redis；通过时渠道侧自行作废验证码防重放
     if (!smsCodeChannel.verifyCode(phone, scene, dto.getCode())) {
-      // 失败计数 +1，TTL 与验证码有效期对齐：验证码过期后计数自然失效
-      stringRedisTemplate
-        .opsForValue()
-        .increment(failKey);
-      stringRedisTemplate.expire(failKey, Duration.ofSeconds(smsProperties.getCodeExpireSeconds()));
-      throw new BizException(ErrorCodeEnum.SMS_CODE_ERROR, "验证码错误或已过期");
+      throw new BizException(ErrorCodeEnum.SMS_CODE_ERROR, "验证码错误");
     }
 
     // 核验通过：清除失败计数，不影响该号码下一次验证码

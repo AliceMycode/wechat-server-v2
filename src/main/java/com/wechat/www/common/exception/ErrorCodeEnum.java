@@ -24,6 +24,21 @@ public enum ErrorCodeEnum {
   PARAM_INVALID("A0400", "请求参数错误"),
 
   /**
+   * 手机号已注册（手册附表 3：A0111 用户名已存在）
+   */
+  PHONE_ALREADY_REGISTERED("A0111", "该手机号已注册"),
+
+  /**
+   * 密码长度不够（手册附表 3：A0121）
+   */
+  PASSWORD_LENGTH_INVALID("A0121", "密码长度需为 8~16 位"),
+
+  /**
+   * 密码强度不够（手册附表 3：A0122）
+   */
+  PASSWORD_STRENGTH_WEAK("A0122", "密码需包含字母、数字、符号中的至少两种"),
+
+  /**
    * 手机格式校验失败
    */
   PHONE_FORMAT_ERROR("A0151", "手机号格式不正确"),

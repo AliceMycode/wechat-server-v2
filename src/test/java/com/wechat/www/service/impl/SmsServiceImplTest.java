@@ -126,7 +126,8 @@ class SmsServiceImplTest {
     assertThat(saved.getBizId()).isEqualTo("biz-1");
     assertThat(saved.getRequestId()).isEqualTo("req-1");
     assertThat(saved.getSendStatus()).isEqualTo(SmsConst.SEND_STATUS_SUCCESS);
-    verify(stringRedisTemplate).delete(FAIL_KEY);
+    // 失败计数清零，并把 TTL 锚定在发送时刻（与验证码同生命周期）
+    verify(valueOperations).set(FAIL_KEY, SmsConst.VERIFY_FAIL_INIT_VALUE, Duration.ofSeconds(300));
   }
 
   @Test
@@ -145,17 +146,18 @@ class SmsServiceImplTest {
     verify(smsRecordMapper).insert(captor.capture());
     assertThat(captor.getValue().getSendStatus()).isEqualTo(SmsConst.SEND_STATUS_FAIL);
     assertThat(captor.getValue().getErrorCode()).isEqualTo(ErrorCodeEnum.SMS_SEND_FAILED.getCode());
-    // 失败不能清除失败计数，也不能误删
-    verify(stringRedisTemplate, never()).delete(anyString());
+    // 发送失败不重设失败计数：旧验证码仍然有效，计数窗口不应被延长或清零
+    verify(valueOperations, never()).set(anyString(), anyString(), any(Duration.class));
   }
 
   // ==================== verifyCode：失败计数 ====================
 
   @Test
-  @DisplayName("失败次数已达上限：直接拒绝，不再调用渠道")
-  void verifyCode_whenFailCountReachedLimit_shouldRejectWithoutChannel() {
+  @DisplayName("尝试次数超上限：直接拒绝，不再调用渠道")
+  void verifyCode_whenAttemptLimitExceeded_shouldRejectWithoutChannel() {
+    when(stringRedisTemplate.hasKey(FAIL_KEY)).thenReturn(true);
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-    when(valueOperations.get(FAIL_KEY)).thenReturn(String.valueOf(SmsConst.VERIFY_MAX_FAIL_COUNT));
+    when(valueOperations.increment(FAIL_KEY)).thenReturn(SmsConst.VERIFY_MAX_FAIL_COUNT + 1L);
 
     BizException ex = assertThrows(BizException.class, () -> smsService.verifyCode(verifyDto("123456")));
 
@@ -164,30 +166,45 @@ class SmsServiceImplTest {
   }
 
   @Test
-  @DisplayName("核验不通过：失败计数 +1 并按有效期刷新 TTL")
-  void verifyCode_whenCodeWrong_shouldIncrementFailCount() {
+  @DisplayName("核验不通过：本次尝试已计入，且不续期 TTL")
+  void verifyCode_whenCodeWrong_shouldKeepAttemptCountWithoutRenewingTtl() {
+    when(stringRedisTemplate.hasKey(FAIL_KEY)).thenReturn(true);
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-    when(valueOperations.get(FAIL_KEY)).thenReturn("2");
+    when(valueOperations.increment(FAIL_KEY)).thenReturn(3L);
     when(smsCodeChannel.verifyCode(PHONE, SmsSceneEnum.REGISTER, "123456")).thenReturn(false);
 
     BizException ex = assertThrows(BizException.class, () -> smsService.verifyCode(verifyDto("123456")));
 
     assertThat(ex.getErrorCode()).isEqualTo(ErrorCodeEnum.SMS_CODE_ERROR);
     verify(valueOperations).increment(FAIL_KEY);
-    verify(stringRedisTemplate).expire(FAIL_KEY, Duration.ofSeconds(300));
+    // TTL 由发送时设定，失败续期会让计数比验证码活得久
+    verify(stringRedisTemplate, never()).expire(anyString(), any(Duration.class));
     verify(stringRedisTemplate, never()).delete(FAIL_KEY);
   }
 
   @Test
-  @DisplayName("核验通过：清除失败计数")
+  @DisplayName("验证码已过期（计数 key 已消失）：直接拒绝，不碰 Redis 计数")
+  void verifyCode_whenFailKeyAbsent_shouldRejectWithoutIncrement() {
+    when(stringRedisTemplate.hasKey(FAIL_KEY)).thenReturn(false);
+
+    BizException ex = assertThrows(BizException.class, () -> smsService.verifyCode(verifyDto("123456")));
+
+    assertThat(ex.getErrorCode()).isEqualTo(ErrorCodeEnum.SMS_CODE_ERROR);
+    verify(stringRedisTemplate, never()).opsForValue();
+    verify(smsCodeChannel, never()).verifyCode(anyString(), any(), anyString());
+  }
+
+  @Test
+  @DisplayName("核验通过：清除计数")
   void verifyCode_whenCodeCorrect_shouldClearFailCount() {
+    when(stringRedisTemplate.hasKey(FAIL_KEY)).thenReturn(true);
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.increment(FAIL_KEY)).thenReturn(1L);
     when(smsCodeChannel.verifyCode(PHONE, SmsSceneEnum.REGISTER, "123456")).thenReturn(true);
 
     assertDoesNotThrow(() -> smsService.verifyCode(verifyDto("123456")));
 
     verify(stringRedisTemplate).delete(FAIL_KEY);
-    verify(valueOperations, never()).increment(anyString());
   }
 
   private SendSmsCodeDTO sendDto() {
