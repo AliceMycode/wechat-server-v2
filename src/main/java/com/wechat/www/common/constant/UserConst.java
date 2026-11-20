@@ -18,6 +18,15 @@ public final class UserConst {
   /** 密码至少包含的字符类别数：字母 / 数字 / 符号 三类中至少两类 */
   public static final int PASSWORD_MIN_CHAR_TYPES = 2;
 
+  /** user_account.status：正常 */
+  public static final int STATUS_NORMAL = 0;
+
+  /** user_account.status：禁用 */
+  public static final int STATUS_DISABLED = 1;
+
+  /** user_account.status：注销 */
+  public static final int STATUS_CANCELLED = 2;
+
   private UserConst() {
   }
 

@@ -50,4 +50,13 @@ public class RegisterUserDTO {
   @Size(max = 64, message = "设备标识长度不能超过 64")
   private String deviceId;
 
+  /** 设备类型 1Electron 2iOS 3Android 4Web；不传按 0（未识别）落库 */
+  @Schema(description = "设备类型 1Electron 2iOS 3Android 4Web", example = "1")
+  private Integer deviceType;
+
+  /** 设备名称 */
+  @Schema(description = "设备名称", example = "MacBook Pro")
+  @Size(max = 64, message = "设备名称长度不能超过 64")
+  private String deviceName;
+
 }

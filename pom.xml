@@ -136,8 +136,16 @@
 
     <!-- ==================== 安全 ==================== -->
 
-    <!-- Spring Security 加密模块：只用 BCryptPasswordEncoder 做密码哈希，
-         不引入 spring-boot-starter-security，因此不会启用认证过滤链 -->
+    <!-- Spring Security 全套：提供 stateless 认证过滤链、SecurityContext、
+         AuthenticationEntryPoint 等鉴权基础设施。登录态由 opaque token + Redis 承载，
+         本依赖不启用 session、表单登录和 CSRF（见 SecurityConfig） -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+
+    <!-- Spring Security 加密模块：BCryptPasswordEncoder 做密码哈希（starter 已传递引入，
+         这里显式声明以表明用途：密码编码与认证过滤链是两件事） -->
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-crypto</artifactId>

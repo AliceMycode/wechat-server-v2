@@ -22,6 +22,22 @@ public final class RedisKeyConst {
    */
   public static final String SMS_VERIFY_FAIL_PREFIX = "wechat:sms:verify:fail:";
 
+  /**
+   * 登录会话：wechat:auth:session:{token}，Hash{userId,deviceId}，TTL=会话有效期，每次鉴权续期
+   */
+  public static final String AUTH_SESSION_PREFIX = "wechat:auth:session:";
+
+  /**
+   * 用户设备当前 token：wechat:auth:user:{userId}:{deviceId}，value=token，TTL=会话有效期。
+   * 同一设备重复登录时用它找到旧会话并踢掉，保证一台设备只有一个有效 token
+   */
+  public static final String AUTH_USER_DEVICE_PREFIX = "wechat:auth:user:";
+
+  /**
+   * 密码错误计数：wechat:auth:pwd:fail:{phone}，value=错误次数，TTL=锁定时长
+   */
+  public static final String AUTH_PWD_FAIL_PREFIX = "wechat:auth:pwd:fail:";
+
   private RedisKeyConst() {
   }
 
