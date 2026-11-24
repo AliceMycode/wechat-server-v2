@@ -48,8 +48,11 @@ public class SmsAuthProperties {
   private String signName;
 
   /**
-   * 短信模板 CODE：必填（SendSmsVerifyCode 实测 400 强校验），赠送模板 100001 格式
+   * 短信模板 CODE，按业务场景配置，key 为场景标识（register/login/reset）。
+   *
+   * <p>模板必填（SendSmsVerifyCode 实测 400 强校验），且文案按场景区分：
+   * 登录/注册共用 100001，重置密码用 100003，绑定/修改手机号等场景后续迭代再补。
    */
-  private String templateCode;
+  private Map<String, String> templateCode = new HashMap<>(16);
 
 }

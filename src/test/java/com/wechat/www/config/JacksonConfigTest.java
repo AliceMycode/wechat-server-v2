@@ -1,13 +1,13 @@
 package com.wechat.www.config;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.wechat.www.manager.SmsCodeChannel;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tools.jackson.databind.ObjectMapper;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Jackson 序列化配置测试：超出 JS 安全整数范围的 Long 输出字符串，范围内保持数字。

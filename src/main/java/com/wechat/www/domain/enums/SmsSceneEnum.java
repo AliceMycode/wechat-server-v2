@@ -12,19 +12,29 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum SmsSceneEnum {
 
-  /** 注册 */
+  /**
+   * 注册
+   */
   REGISTER("register", "注册"),
 
-  /** 登录 */
+  /**
+   * 登录
+   */
   LOGIN("login", "登录"),
 
-  /** 重置密码 */
+  /**
+   * 重置密码
+   */
   RESET("reset", "重置密码");
 
-  /** 场景标识，与数据库 sms_record.scene 取值一致 */
+  /**
+   * 场景标识，与数据库 sms_record.scene 取值一致
+   */
   private final String code;
 
-  /** 场景中文名 */
+  /**
+   * 场景中文名
+   */
   private final String desc;
 
   /**

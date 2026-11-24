@@ -34,16 +34,24 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-  /** 密码允许的字符集：ASCII 可打印字符（0x21~0x7E），不含空格 */
+  /**
+   * 密码允许的字符集：ASCII 可打印字符（0x21~0x7E），不含空格
+   */
   private static final Pattern PASSWORD_ALLOWED = Pattern.compile("^[!-~]+$");
 
-  /** 字母 */
+  /**
+   * 字母
+   */
   private static final Pattern PASSWORD_LETTER = Pattern.compile("[A-Za-z]");
 
-  /** 数字 */
+  /**
+   * 数字
+   */
   private static final Pattern PASSWORD_DIGIT = Pattern.compile("\\d");
 
-  /** 符号：非字母非数字的 ASCII 字符 */
+  /**
+   * 符号：非字母非数字的 ASCII 字符
+   */
   private static final Pattern PASSWORD_SYMBOL = Pattern.compile("[^A-Za-z0-9]");
 
   private final UserAccountMapper userAccountMapper;
@@ -77,7 +85,7 @@ public class UserServiceImpl implements UserService {
       userAccountMapper.insert(account);
     } catch (DuplicateKeyException e) {
       // 并发注册兜底：两个请求同时通过上面的查重时，由唯一键 uk_country_phone 拦下后一个
-      throw new BizException(ErrorCodeEnum.PHONE_ALREADY_REGISTERED, "该手机号已注册");
+      throw new BizException(ErrorCodeEnum.PHONE_ALREADY_REGISTERED);
     }
     Long userId = account.getId();
 
@@ -103,10 +111,10 @@ public class UserServiceImpl implements UserService {
    */
   private void checkPasswordPolicy(String password) {
     if (password.length() < UserConst.PASSWORD_MIN_LENGTH || password.length() > UserConst.PASSWORD_MAX_LENGTH) {
-      throw new BizException(ErrorCodeEnum.PASSWORD_LENGTH_INVALID, "密码长度需为 8~16 位");
+      throw new BizException(ErrorCodeEnum.PASSWORD_LENGTH_INVALID);
     }
     if (!PASSWORD_ALLOWED.matcher(password).matches()) {
-      throw new BizException(ErrorCodeEnum.PASSWORD_STRENGTH_WEAK, "密码只能包含字母、数字和符号");
+      throw new BizException(ErrorCodeEnum.PASSWORD_STRENGTH_WEAK);
     }
     int charTypes = 0;
     if (PASSWORD_LETTER.matcher(password).find()) {
@@ -119,7 +127,7 @@ public class UserServiceImpl implements UserService {
       charTypes++;
     }
     if (charTypes < UserConst.PASSWORD_MIN_CHAR_TYPES) {
-      throw new BizException(ErrorCodeEnum.PASSWORD_STRENGTH_WEAK, "密码需包含字母、数字、符号中的至少两种");
+      throw new BizException(ErrorCodeEnum.PASSWORD_STRENGTH_WEAK);
     }
   }
 
@@ -127,11 +135,11 @@ public class UserServiceImpl implements UserService {
    * 手机号查重：走唯一键 uk_country_phone 的等值查询，先给友好提示，并发由唯一键兜底。
    */
   private void ensurePhoneNotRegistered(String countryCode, String phone) {
-    Long count = userAccountMapper.selectCount(new LambdaQueryWrapper<UserAccountDO>()
-      .eq(UserAccountDO::getCountryCode, countryCode)
-      .eq(UserAccountDO::getPhone, phone));
+    Long count =
+      userAccountMapper.selectCount(new LambdaQueryWrapper<UserAccountDO>().eq(UserAccountDO::getCountryCode,
+        countryCode).eq(UserAccountDO::getPhone, phone));
     if (count > 0) {
-      throw new BizException(ErrorCodeEnum.PHONE_ALREADY_REGISTERED, "该手机号已注册");
+      throw new BizException(ErrorCodeEnum.PHONE_ALREADY_REGISTERED);
     }
   }
 

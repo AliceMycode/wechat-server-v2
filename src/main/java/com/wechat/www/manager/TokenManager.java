@@ -11,7 +11,6 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
-import java.util.Random;
 
 /**
  * 登录会话管理：opaque token 与 Redis 会话的读写。
@@ -53,7 +52,6 @@ public class TokenManager {
 
   private final StringRedisTemplate stringRedisTemplate;
 
-
   private final AuthProperties authProperties;
 
   /**
@@ -69,9 +67,7 @@ public class TokenManager {
 
     // 同一设备重复登录：旧 token 立即失效，避免会话越积越多
     String deviceKey = deviceKey(userId, deviceId);
-    String oldToken = stringRedisTemplate
-      .opsForValue()
-      .get(deviceKey);
+    String oldToken = stringRedisTemplate.opsForValue().get(deviceKey);
     if (oldToken != null) {
       stringRedisTemplate.delete(sessionKey(oldToken));
     }
@@ -80,9 +76,7 @@ public class TokenManager {
       .opsForHash()
       .putAll(sessionKey(token), Map.of(FIELD_USER_ID, String.valueOf(userId), FIELD_DEVICE_ID, deviceId));
     stringRedisTemplate.expire(sessionKey(token), ttl);
-    stringRedisTemplate
-      .opsForValue()
-      .set(deviceKey, token, ttl);
+    stringRedisTemplate.opsForValue().set(deviceKey, token, ttl);
     return token;
   }
 
@@ -94,9 +88,7 @@ public class TokenManager {
    * @return 登录用户；token 不存在或已过期时返回 null
    */
   public LoginUser resolve(String token) {
-    Map<Object, Object> session = stringRedisTemplate
-      .opsForHash()
-      .entries(sessionKey(token));
+    Map<Object, Object> session = stringRedisTemplate.opsForHash().entries(sessionKey(token));
     if (session == null || session.isEmpty()) {
       return null;
     }
@@ -120,9 +112,7 @@ public class TokenManager {
    */
   public void revoke(Long userId, String deviceId) {
     String deviceKey = deviceKey(userId, deviceId);
-    String token = stringRedisTemplate
-      .opsForValue()
-      .get(deviceKey);
+    String token = stringRedisTemplate.opsForValue().get(deviceKey);
     if (token != null) {
       stringRedisTemplate.delete(sessionKey(token));
     }
@@ -132,10 +122,7 @@ public class TokenManager {
   private String generateToken() {
     byte[] bytes = new byte[TOKEN_BYTES];
     SECURE_RANDOM.nextBytes(bytes);
-    return Base64
-      .getUrlEncoder()
-      .withoutPadding()
-      .encodeToString(bytes);
+    return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
   }
 
   private Duration tokenTtl() {

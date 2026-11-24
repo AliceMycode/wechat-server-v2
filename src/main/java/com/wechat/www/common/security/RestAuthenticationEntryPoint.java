@@ -27,15 +27,13 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
   @Override
   public void commence(@NonNull HttpServletRequest request, HttpServletResponse response,
-                       @NonNull AuthenticationException authException) throws IOException {
+    @NonNull AuthenticationException authException) throws IOException {
     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-    String body = objectMapper.writeValueAsString(
-      Result.fail(ErrorCodeEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED.getMessage()));
-    response
-      .getWriter()
-      .write(body);
+    String body = objectMapper.writeValueAsString(Result.fail(ErrorCodeEnum.UNAUTHORIZED,
+      ErrorCodeEnum.UNAUTHORIZED.getMessage()));
+    response.getWriter().write(body);
   }
 
 }

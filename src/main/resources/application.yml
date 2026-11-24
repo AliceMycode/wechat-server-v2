@@ -126,10 +126,15 @@ sms:
       register: ${ALIYUN_SMS_AUTH_SCHEME_REGISTER:register}
       login: ${ALIYUN_SMS_AUTH_SCHEME_LOGIN:login}
       reset: ${ALIYUN_SMS_AUTH_SCHEME_RESET:reset}
-    # 签名名称，必填（SendSmsVerifyCode 实测 400 强校验），如"北京恒创联众"
-    sign-name: ${ALIYUN_SMS_AUTH_SIGN_NAME:}
-    # 模板 CODE，必填（SendSmsVerifyCode 实测 400 强校验），如 100001
-    template-code: ${ALIYUN_SMS_AUTH_TEMPLATE_CODE:}
+    # 签名名称，必填（SendSmsVerifyCode 实测 400 强校验）。写死为套餐包赠送签名，
+    # 需要换签名时可用 ALIYUN_SMS_AUTH_SIGN_NAME 覆盖，无需改代码
+    sign-name: ${ALIYUN_SMS_AUTH_SIGN_NAME:北京恒创联众}
+    # 模板 CODE，必填（SendSmsVerifyCode 实测 400 强校验），按场景配置：
+    # 登录/注册共用 100001，重置密码用 100003；绑定/修改手机号等场景后续迭代再补
+    template-code:
+      register: "100001"
+      login: "100001"
+      reset: "100003"
     # 号码国家编码，发送/核验两侧一致，阿里云目前仅支持国内（86）
     country-code: 86
     # 验证码类型：1-纯数字 2-纯大写 3-纯小写 4-大小写混合 5-数字+大写 6-数字+小写 7-数字+大小写

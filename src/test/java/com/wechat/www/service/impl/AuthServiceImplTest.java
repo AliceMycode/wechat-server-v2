@@ -1,13 +1,5 @@
 package com.wechat.www.service.impl;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.constant.UserConst;
 import com.wechat.www.common.exception.BizException;
@@ -39,6 +31,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 /**
  * 登录鉴权单元测试：密码登录、验证码登录、账号状态与登出。
@@ -94,8 +92,8 @@ class AuthServiceImplTest {
     authProperties.setTokenExpireSeconds(604800);
     authProperties.setPasswordMaxFailCount(5);
     authProperties.setPasswordLockSeconds(900);
-    authService = new AuthServiceImpl(userAccountMapper, userProfileMapper, userDeviceMapper, userService,
-        smsService, tokenManager, passwordEncoder, stringRedisTemplate, authProperties);
+    authService = new AuthServiceImpl(userAccountMapper, userProfileMapper, userDeviceMapper, userService, smsService
+      , tokenManager, passwordEncoder, stringRedisTemplate, authProperties);
   }
 
   // ==================== 密码登录 ====================
@@ -248,8 +246,8 @@ class AuthServiceImplTest {
   void currentUser_whenAccountMissing_shouldReturnLoginExpired() {
     when(userAccountMapper.selectById(USER_ID)).thenReturn(null);
 
-    BizException ex = assertThrows(BizException.class,
-        () -> authService.currentUser(new LoginUser(USER_ID, DEVICE_ID)));
+    BizException ex = assertThrows(BizException.class, () -> authService.currentUser(new LoginUser(USER_ID,
+      DEVICE_ID)));
 
     assertThat(ex.getErrorCode()).isEqualTo(ErrorCodeEnum.LOGIN_EXPIRED);
   }

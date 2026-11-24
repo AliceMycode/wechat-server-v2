@@ -13,8 +13,7 @@ public class OpenApiConfig {
 
   @Bean
   public OpenAPI wechatOpenApi() {
-    return new OpenAPI().info(new Info()
-      .title("wechat-server-v2 API")
+    return new OpenAPI().info(new Info().title("wechat-server-v2 API")
       .version("v1")
       .description("微信风格 IM 服务端 API"));
   }

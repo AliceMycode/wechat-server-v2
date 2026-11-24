@@ -1,12 +1,12 @@
 package com.wechat.www.domain.enums;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * 短信场景枚举解析：合法值正常返回，非法值统一按参数错误拒绝。

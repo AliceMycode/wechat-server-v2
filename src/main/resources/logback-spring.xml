@@ -14,18 +14,24 @@
   <springProperty scope="context" name="APP_LOG_LEVEL" source="logging.level.com.wechat" defaultValue="INFO"/>
   <springProperty scope="context" name="DRUID_LOG_LEVEL" source="logging.level.com.alibaba.druid" defaultValue="INFO"/>
   <springProperty scope="context" name="LETTUCE_LOG_LEVEL" source="logging.level.io.lettuce.core" defaultValue="INFO"/>
-  <springProperty scope="context" name="SPRING_REDIS_LOG_LEVEL" source="logging.level.org.springframework.data.redis" defaultValue="INFO"/>
-  <springProperty scope="context" name="MYBATIS_LOG_LEVEL" source="logging.level.com.baomidou.mybatisplus" defaultValue="INFO"/>
+  <springProperty scope="context" name="SPRING_REDIS_LOG_LEVEL" source="logging.level.org.springframework.data.redis"
+                  defaultValue="INFO"/>
+  <springProperty scope="context" name="MYBATIS_LOG_LEVEL" source="logging.level.com.baomidou.mybatisplus"
+                  defaultValue="INFO"/>
 
   <!-- Spring Boot 默认颜色/异常转换器 -->
   <conversionRule conversionWord="clr" class="org.springframework.boot.logging.logback.ColorConverter"/>
-  <conversionRule conversionWord="wex" class="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
-  <conversionRule conversionWord="wEx" class="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
+  <conversionRule conversionWord="wex"
+                  class="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
+  <conversionRule conversionWord="wEx"
+                  class="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
 
   <!-- 控制台：与 Spring Boot 默认启动日志一致的彩色高亮格式 -->
   <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%clr(%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([${APP_NAME}] [%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx</pattern>
+      <pattern>%clr(%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint}
+        %clr([${APP_NAME}] [%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx
+      </pattern>
     </encoder>
   </appender>
 

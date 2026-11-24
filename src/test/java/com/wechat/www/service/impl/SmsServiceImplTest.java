@@ -1,15 +1,5 @@
 package com.wechat.www.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.constant.SmsConst;
 import com.wechat.www.common.exception.BizException;
@@ -22,7 +12,6 @@ import com.wechat.www.domain.dto.VerifySmsCodeDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
 import com.wechat.www.manager.SmsCodeChannel;
 import com.wechat.www.mapper.SmsRecordMapper;
-import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +21,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+
+import java.time.Duration;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * 短信服务单元测试：频控、核验失败计数与落库状态。
@@ -79,8 +76,7 @@ class SmsServiceImplTest {
   @DisplayName("冷却未过：拒绝发送，不调渠道也不落库")
   void sendCode_whenWithinCooldown_shouldRejectWithoutTouchingChannel() {
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-    when(valueOperations.setIfAbsent(eq(LIMIT_KEY), eq(SmsConst.SEND_LIMIT_PLACEHOLDER), any(Duration.class)))
-        .thenReturn(false);
+    when(valueOperations.setIfAbsent(eq(LIMIT_KEY), eq(SmsConst.SEND_LIMIT_PLACEHOLDER), any(Duration.class))).thenReturn(false);
 
     BizException ex = assertThrows(BizException.class, () -> smsService.sendCode(sendDto(), IP));
 
@@ -111,8 +107,7 @@ class SmsServiceImplTest {
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
     when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
     when(smsRecordMapper.selectCount(any())).thenReturn(0L);
-    when(smsCodeChannel.sendCode(PHONE, SmsSceneEnum.REGISTER))
-        .thenReturn(new SmsSendResultDTO("biz-1", "req-1"));
+    when(smsCodeChannel.sendCode(PHONE, SmsSceneEnum.REGISTER)).thenReturn(new SmsSendResultDTO("biz-1", "req-1"));
 
     smsService.sendCode(sendDto(), IP);
 
@@ -136,8 +131,7 @@ class SmsServiceImplTest {
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
     when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
     when(smsRecordMapper.selectCount(any())).thenReturn(0L);
-    when(smsCodeChannel.sendCode(PHONE, SmsSceneEnum.REGISTER))
-        .thenThrow(new BizException(ErrorCodeEnum.SMS_SEND_FAILED, "短信发送失败: isv.BUSINESS_LIMIT_CONTROL"));
+    when(smsCodeChannel.sendCode(PHONE, SmsSceneEnum.REGISTER)).thenThrow(new BizException(ErrorCodeEnum.SMS_SEND_FAILED, "短信发送失败: isv.BUSINESS_LIMIT_CONTROL"));
 
     BizException ex = assertThrows(BizException.class, () -> smsService.sendCode(sendDto(), IP));
 

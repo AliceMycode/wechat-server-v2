@@ -26,9 +26,8 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http, TokenManager tokenManager,
-      ObjectMapper objectMapper) throws Exception {
-    http
-      .csrf(AbstractHttpConfigurer::disable)
+    ObjectMapper objectMapper) throws Exception {
+    http.csrf(AbstractHttpConfigurer::disable)
       .formLogin(AbstractHttpConfigurer::disable)
       .httpBasic(AbstractHttpConfigurer::disable)
       // 禁用内置登出：/api/auth/logout 走自己的 Controller，才能清理 Redis 会话
@@ -36,12 +35,16 @@ public class SecurityConfig {
       .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
       .authorizeHttpRequests(auth -> auth
         // 登录、注册、发验证码必须匿名可访问
-        .requestMatchers("/api/auth/login/**", "/api/user/register", "/api/sms/**").permitAll()
+        .requestMatchers("/api/auth/login/**", "/api/user/register", "/api/sms/**")
+        .permitAll()
         // 接口文档（Knife4j / springdoc）
-        .requestMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**", "/swagger-ui/**", "/favicon.ico").permitAll()
+        .requestMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**", "/swagger-ui/**", "/favicon.ico")
+        .permitAll()
         // 探活与错误页：/error 不放行会让异常转发再次被拦截，掩盖真实错误
-        .requestMatchers("/actuator/health", "/actuator/info", "/error").permitAll()
-        .anyRequest().authenticated())
+        .requestMatchers("/actuator/health", "/actuator/info", "/error")
+        .permitAll()
+        .anyRequest()
+        .authenticated())
       .exceptionHandling(handler -> handler.authenticationEntryPoint(new RestAuthenticationEntryPoint(objectMapper)))
       .addFilterBefore(new TokenAuthenticationFilter(tokenManager), UsernamePasswordAuthenticationFilter.class);
     return http.build();

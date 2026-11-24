@@ -1,14 +1,5 @@
 package com.wechat.www.service.impl;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.domain.UserAccountDO;
@@ -31,6 +22,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 /**
  * 用户注册单元测试：密码策略、验证码核验、手机号查重与三表落库。
@@ -68,7 +64,7 @@ class UserServiceImplTest {
   @BeforeEach
   void setUp() {
     userService = new UserServiceImpl(userAccountMapper, userProfileMapper, userDeviceMapper, smsService,
-        passwordEncoder);
+      passwordEncoder);
   }
 
   // ==================== 密码策略 ====================
@@ -112,8 +108,7 @@ class UserServiceImplTest {
   @Test
   @DisplayName("验证码核验失败：异常原样透传，不落库")
   void register_whenCodeInvalid_shouldPropagateWithoutPersisting() {
-    doThrow(new BizException(ErrorCodeEnum.SMS_CODE_ERROR, "验证码错误或已过期"))
-        .when(smsService).verifyCode(any());
+    doThrow(new BizException(ErrorCodeEnum.SMS_CODE_ERROR, "验证码错误或已过期")).when(smsService).verifyCode(any());
 
     BizException ex = assertThrows(BizException.class, () -> userService.register(dto(VALID_PASSWORD)));
 
@@ -139,8 +134,7 @@ class UserServiceImplTest {
   void register_whenDuplicateKeyOnInsert_shouldConvertToRegistered() {
     when(userAccountMapper.selectCount(any())).thenReturn(0L);
     when(passwordEncoder.encode(VALID_PASSWORD)).thenReturn(PASSWORD_HASH);
-    doThrow(new DuplicateKeyException("uk_country_phone"))
-        .when(userAccountMapper).insert(any(UserAccountDO.class));
+    doThrow(new DuplicateKeyException("uk_country_phone")).when(userAccountMapper).insert(any(UserAccountDO.class));
 
     BizException ex = assertThrows(BizException.class, () -> userService.register(dto(VALID_PASSWORD)));
 

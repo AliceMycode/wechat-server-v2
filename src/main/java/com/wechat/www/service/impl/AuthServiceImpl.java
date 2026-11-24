@@ -63,8 +63,7 @@ public class AuthServiceImpl implements AuthService {
     // 本方法刻意不加 @Transactional：会话写 Redis 无法参与数据库回滚，
     // 放在事务里只会造成"Redis 成功、数据库回滚"的不一致
     RegisterUserVO user = userService.register(dto);
-    return issue(user.getUserId(), dto.getDeviceId(), user.getNickname(), dto.getDeviceType(),
-        dto.getDeviceName());
+    return issue(user.getUserId(), dto.getDeviceId(), user.getNickname(), dto.getDeviceType(), dto.getDeviceName());
   }
 
   @Override
@@ -74,9 +73,7 @@ public class AuthServiceImpl implements AuthService {
 
     // 先占坑再验证：INCR 是单命令原子操作，返回值即本次尝试序号。
     // 并发请求各自拿到不同序号，不会出现"一起读到 4 全部放行"的窗口。
-    Long attempt = stringRedisTemplate
-      .opsForValue()
-      .increment(failKey);
+    Long attempt = stringRedisTemplate.opsForValue().increment(failKey);
     if (attempt != null && attempt == 1L) {
       // 只在首次创建时设 TTL，后续失败不续期：否则持续重试会把锁定时间无限延长
       stringRedisTemplate.expire(failKey, Duration.ofSeconds(authProperties.getPasswordLockSeconds()));
@@ -99,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
     // 登录成功清零，下一次失败重新从 1 开始
     stringRedisTemplate.delete(failKey);
     return issue(account.getId(), dto.getDeviceId(), loadNickname(account.getId()), dto.getDeviceType(),
-        dto.getDeviceName());
+      dto.getDeviceName());
   }
 
   @Override
@@ -119,7 +116,7 @@ public class AuthServiceImpl implements AuthService {
     ensureAccountUsable(account);
 
     return issue(account.getId(), dto.getDeviceId(), loadNickname(account.getId()), dto.getDeviceType(),
-        dto.getDeviceName());
+      dto.getDeviceName());
   }
 
   @Override
@@ -136,7 +133,7 @@ public class AuthServiceImpl implements AuthService {
       throw new BizException(ErrorCodeEnum.LOGIN_EXPIRED);
     }
     return new UserInfoVO(account.getId(), loadNickname(account.getId()), PhoneUtils.mask(account.getPhone()),
-        loginUser.deviceId());
+      loginUser.deviceId());
   }
 
   /**
@@ -151,9 +148,8 @@ public class AuthServiceImpl implements AuthService {
   }
 
   private UserAccountDO findByPhone(String countryCode, String phone) {
-    return userAccountMapper.selectOne(new LambdaQueryWrapper<UserAccountDO>()
-      .eq(UserAccountDO::getCountryCode, countryCode)
-      .eq(UserAccountDO::getPhone, phone));
+    return userAccountMapper.selectOne(new LambdaQueryWrapper<UserAccountDO>().eq(UserAccountDO::getCountryCode,
+        countryCode).eq(UserAccountDO::getPhone, phone));
   }
 
   /**
@@ -170,8 +166,8 @@ public class AuthServiceImpl implements AuthService {
   }
 
   private String loadNickname(Long userId) {
-    UserProfileDO profile = userProfileMapper.selectOne(new LambdaQueryWrapper<UserProfileDO>()
-      .eq(UserProfileDO::getUserId, userId));
+    UserProfileDO profile =
+      userProfileMapper.selectOne(new LambdaQueryWrapper<UserProfileDO>().eq(UserProfileDO::getUserId, userId));
     return profile == null ? "" : profile.getNickname();
   }
 
@@ -189,8 +185,8 @@ public class AuthServiceImpl implements AuthService {
    * 这里吞掉异常即可 —— 两行的业务含义完全相同。
    */
   private void touchDevice(Long userId, String deviceId, Integer deviceType, String deviceName) {
-    UserDeviceDO existing = userDeviceMapper.selectOne(new LambdaQueryWrapper<UserDeviceDO>()
-      .eq(UserDeviceDO::getUserId, userId)
+    UserDeviceDO existing =
+      userDeviceMapper.selectOne(new LambdaQueryWrapper<UserDeviceDO>().eq(UserDeviceDO::getUserId, userId)
       .eq(UserDeviceDO::getDeviceId, deviceId));
     if (existing != null) {
       UserDeviceDO update = new UserDeviceDO();

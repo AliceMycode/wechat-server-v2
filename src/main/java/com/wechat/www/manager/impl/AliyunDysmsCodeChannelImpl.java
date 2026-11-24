@@ -15,6 +15,7 @@ import com.wechat.www.domain.dto.SmsSendResultDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
 import com.wechat.www.manager.SmsCodeChannel;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -32,28 +33,21 @@ import java.time.Duration;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 @ConditionalOnProperty(name = "sms.mode", havingValue = "dysmsapi")
 public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
 
   private final StringRedisTemplate stringRedisTemplate;
-
   private final SmsProperties smsProperties;
-
-  /** 传统短信专属配置（签名/模板） */
   private final SmsDysmsProperties dysmsProperties;
-
-  /** SecureRandom 实例线程安全可复用；验证码是安全敏感数据，不用 Random/ThreadLocalRandom */
+  /**
+   * SecureRandom 实例线程安全可复用；验证码是安全敏感数据，不用 Random/ThreadLocalRandom
+   */
   private final SecureRandom secureRandom = new SecureRandom();
-
-  /** SDK 客户端线程安全，应用内复用一个实例即可 */
+  /**
+   * SDK 客户端线程安全，应用内复用一个实例即可
+   */
   private Client client;
-
-  public AliyunDysmsCodeChannelImpl(StringRedisTemplate stringRedisTemplate, SmsProperties smsProperties,
-      SmsDysmsProperties dysmsProperties) {
-    this.stringRedisTemplate = stringRedisTemplate;
-    this.smsProperties = smsProperties;
-    this.dysmsProperties = dysmsProperties;
-  }
 
   /**
    * 启动时创建客户端，AK 配错直接启动失败（fail fast，不带病运行）。
@@ -61,16 +55,16 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
   @PostConstruct
   public void init() throws Exception {
     if (smsProperties.getAccessKeyId() == null || smsProperties.getAccessKeyId().isBlank()
-        || smsProperties.getAccessKeySecret() == null || smsProperties.getAccessKeySecret().isBlank()) {
+      || smsProperties.getAccessKeySecret() == null || smsProperties.getAccessKeySecret().isBlank()) {
       throw new IllegalStateException("sms.mode=dysmsapi 但未配置阿里云 AccessKey（ALIYUN_SMS_ACCESS_KEY_ID/SECRET）");
     }
     Config config = new Config()
-        .setAccessKeyId(smsProperties.getAccessKeyId())
-        .setAccessKeySecret(smsProperties.getAccessKeySecret())
-        .setEndpoint(AliyunSmsConst.DYSMS_ENDPOINT)
-        // 服务器规约【强制】：调用远程操作必须有超时设置
-        .setConnectTimeout(3000)
-        .setReadTimeout(5000);
+      .setAccessKeyId(smsProperties.getAccessKeyId())
+      .setAccessKeySecret(smsProperties.getAccessKeySecret())
+      .setEndpoint(AliyunSmsConst.DYSMS_ENDPOINT)
+      // 服务器规约【强制】：调用远程操作必须有超时设置
+      .setConnectTimeout(3000)
+      .setReadTimeout(5000);
     client = new Client(config);
     log.info("阿里云短信（Dysmsapi）客户端初始化完成 endpoint={}", AliyunSmsConst.DYSMS_ENDPOINT);
   }
@@ -80,8 +74,8 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
     String code = generateCode();
     // 先发后存：发送失败不会在 Redis 留下"看似有效"的验证码
     SmsSendResultDTO result = doSend(phone, scene, code);
-    stringRedisTemplate.opsForValue()
-        .set(codeKey(scene, phone), code, Duration.ofSeconds(smsProperties.getCodeExpireSeconds()));
+    stringRedisTemplate.opsForValue().set(codeKey(scene, phone), code,
+      Duration.ofSeconds(smsProperties.getCodeExpireSeconds()));
     return result;
   }
 
@@ -105,18 +99,18 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
    */
   private SmsSendResultDTO doSend(String phone, SmsSceneEnum scene, String code) {
     // 验证码是纯数字，手工拼 JSON 无注入风险；以后模板参数多了再抽 Map + 序列化
-    SendSmsRequest request = new SendSmsRequest()
-        .setPhoneNumbers(phone)
-        .setSignName(dysmsProperties.getSignName())
-        .setTemplateCode(dysmsProperties.getTemplateCode())
-        .setTemplateParam("{\"code\":\"" + code + "\"}");
+    SendSmsRequest request = new SendSmsRequest().setPhoneNumbers(phone)
+      .setSignName(dysmsProperties.getSignName())
+      .setTemplateCode(dysmsProperties.getTemplateCode())
+      .setTemplateParam("{\"code\":\"" + code + "\"}");
     try {
       SendSmsResponse response = client.sendSms(request);
       String bizCode = response.getBody().getCode();
       // 注意：HTTP 200 不代表发送成功，必须校验业务成功码 "OK"
       if (!AliyunSmsConst.DYSMS_SUCCESS_CODE.equals(bizCode)) {
-        // 错误信息带上渠道错误码（isv.BUSINESS_LIMIT_CONTROL 等）便于排查
-        throw new BizException(ErrorCodeEnum.SMS_SEND_FAILED, "短信发送失败: " + bizCode);
+        // 渠道错误码（isv.BUSINESS_LIMIT_CONTROL 等）只进日志：GlobalExceptionHandler 会把 message 原样返回前端
+        log.warn("Dysmsapi 短信发送失败 phone={} channelCode={}", PhoneUtils.mask(phone), bizCode);
+        throw new BizException(ErrorCodeEnum.SMS_SEND_FAILED);
       }
       return new SmsSendResultDTO(response.getBody().getBizId(), response.getBody().getRequestId());
     } catch (BizException e) {
@@ -125,7 +119,7 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
     } catch (Exception e) {
       // SDK 方法声明 throws Exception（网络超时、鉴权失败等），统一转义为业务异常
       log.error("Dysmsapi 短信发送异常 phone={}", PhoneUtils.mask(phone), e);
-      throw new BizException(ErrorCodeEnum.SMS_SEND_FAILED, "短信发送失败，请稍后再试");
+      throw new BizException(ErrorCodeEnum.SYSTEM_ERROR);
     }
   }
 
@@ -133,7 +127,9 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
     return String.format(AliyunSmsConst.DYSMS_CODE_FORMAT, secureRandom.nextInt(AliyunSmsConst.DYSMS_CODE_UPPER_BOUND));
   }
 
-  /** 验证码在 Redis 的 key：wechat:sms:code:{scene}:{phone}，与 V1 表设计文档一致 */
+  /**
+   * 验证码在 Redis 的 key：wechat:sms:code:{scene}:{phone}，与 V1 表设计文档一致
+   */
   private String codeKey(SmsSceneEnum scene, String phone) {
     return RedisKeyConst.SMS_CODE_PREFIX + scene.getCode() + ":" + phone;
   }

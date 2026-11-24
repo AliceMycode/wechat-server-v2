@@ -25,9 +25,7 @@ public class GlobalExceptionHandler {
    */
   @ExceptionHandler(BizException.class)
   public ResponseEntity<Result<Void>> handleBizException(BizException e) {
-    log.warn("业务异常 code={} message={}", e
-      .getErrorCode()
-      .getCode(), e.getMessage());
+    log.warn("业务异常 code={} message={}", e.getErrorCode().getCode(), e.getMessage());
     return ResponseEntity.ok(Result.fail(e.getErrorCode(), e.getMessage()));
   }
 
@@ -36,13 +34,9 @@ public class GlobalExceptionHandler {
    */
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<Result<Void>> handleValidException(MethodArgumentNotValidException e) {
-    FieldError fieldError = e
-      .getBindingResult()
-      .getFieldError();
+    FieldError fieldError = e.getBindingResult().getFieldError();
     String message = fieldError == null ? ErrorCodeEnum.PARAM_INVALID.getMessage() : fieldError.getDefaultMessage();
-    return ResponseEntity
-      .badRequest()
-      .body(Result.fail(ErrorCodeEnum.PARAM_INVALID, message));
+    return ResponseEntity.badRequest().body(Result.fail(ErrorCodeEnum.PARAM_INVALID, message));
   }
 
   /**
@@ -50,8 +44,7 @@ public class GlobalExceptionHandler {
    */
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public ResponseEntity<Result<Void>> handleNotReadable(HttpMessageNotReadableException e) {
-    return ResponseEntity
-      .badRequest()
+    return ResponseEntity.badRequest()
       .body(Result.fail(ErrorCodeEnum.JSON_PARSE_ERROR, ErrorCodeEnum.JSON_PARSE_ERROR.getMessage()));
   }
 
@@ -61,9 +54,7 @@ public class GlobalExceptionHandler {
    */
   @ExceptionHandler(NoResourceFoundException.class)
   public ResponseEntity<Void> handleNoResourceFound(NoResourceFoundException e) {
-    return ResponseEntity
-      .notFound()
-      .build();
+    return ResponseEntity.notFound().build();
   }
 
   /**
@@ -72,8 +63,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Result<Void>> handleException(Exception e) {
     log.error("系统异常", e);
-    return ResponseEntity
-      .internalServerError()
+    return ResponseEntity.internalServerError()
       .body(Result.fail(ErrorCodeEnum.SYSTEM_ERROR, ErrorCodeEnum.SYSTEM_ERROR.getMessage()));
   }
 

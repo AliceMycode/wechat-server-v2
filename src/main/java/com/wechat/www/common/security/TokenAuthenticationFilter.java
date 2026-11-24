@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
@@ -41,11 +40,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
       LoginUser loginUser = tokenManager.resolve(token);
       if (loginUser != null) {
         PreAuthenticatedAuthenticationToken authentication = new PreAuthenticatedAuthenticationToken(loginUser, null,
-          List.<GrantedAuthority>of());
+          List.of());
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-        SecurityContextHolder
-          .getContext()
-          .setAuthentication(authentication);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
       }
     }
     chain.doFilter(request, response);
@@ -59,9 +56,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     if (header == null || !header.startsWith(BEARER_PREFIX)) {
       return null;
     }
-    String token = header
-      .substring(BEARER_PREFIX.length())
-      .trim();
+    String token = header.substring(BEARER_PREFIX.length()).trim();
     return token.isEmpty() ? null : token;
   }
 
