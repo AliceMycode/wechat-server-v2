@@ -107,15 +107,47 @@ DROP TABLE IF EXISTS message_receipt;
 
 代码格式由 [.editorconfig](.editorconfig) 统一：UTF-8、LF 换行、行尾不留空格、缩进统一 2 个空格、禁止 Tab；单行不超过 120 字符，Java 续行相对首行缩进 2 个空格（阿里规范为 4 个空格，本项目按 2 空格统一）。IntelliJ IDEA 默认支持 EditorConfig，无需额外插件；本地已开启保存时自动执行 Reformat code、Optimize imports、删除行尾空格、文件末尾补换行。
 
-## 快速开始
+## 环境要求
 
-1. 启动 MySQL 8 和 Redis。`wechat_v2` 库不需要手工创建，
-   数据源 URL 带 `createDatabaseIfNotExist=true`，启动应用时由 JDBC 驱动自动建库。
-2. 按需配置环境变量：`DB_URL`、`DB_USERNAME`、`DB_PASSWORD`、`REDIS_HOST`、`REDIS_PORT`、`REDIS_PASSWORD`；
-3. 启动应用，Flyway 会自动执行 `db/migration` 下的脚本：
+新同事拉下项目后先对照这张表，版本不对会在编译或启动阶段报错。
+
+| 组件 | 版本要求 | 说明 |
+|---|---|---|
+| JDK | **21 或更高**（推荐 21 LTS） | pom 中 `<java.version>21</java.version>`；IDEA 的 Project SDK 也必须是 21 |
+| Maven | **无需单独安装**，wrapper 已锁定 **3.10.0** | 统一用 `./mvnw`（Windows 用 `mvnw.cmd`），本机装别的 Maven 版本不影响构建 |
+| MySQL | **8.0 及以上** | 建表脚本使用 `utf8mb4_0900_ai_ci` 排序规则，MySQL 5.7 不支持；驱动为 MySQL Connector/J 9.x |
+| Redis | **7.x** | 项目验收基线（代码只用 String/Hash/EXPIRE 等基础命令） |
+
+### 最容易踩的坑：JDK 不匹配
+
+Maven 选择 JDK 的顺序是 **`JAVA_HOME` 优先，`PATH` 次之**。只改 `PATH` 不改 `JAVA_HOME` 不会生效。
+先用两条命令自检：
 
 ```bash
-mvn spring-boot:run
+java -version      # 应是 21.x
+./mvnw -v          # 输出里的 "Java version" 也应是 21.x
+```
+
+`mvnw -v` 显示的是 Maven 实际使用的 JDK，以它为准。出现下面任一报错就是 JDK 不对：
+
+- `invalid target release: 21` / `release version 21 not supported`（编译阶段）
+- `UnsupportedClassVersionError ... class file version 65.0`（运行阶段）
+
+修复：把 `JAVA_HOME` 指向 JDK 21 的安装目录，关闭终端和 IDE 后重新打开。
+
+> 单元测试不依赖本机 MySQL / Redis（使用 H2 内存库并关闭 Flyway），`./mvnw test` 可直接运行。
+
+## 快速开始
+
+1. 启动 MySQL 8.0+ 和 Redis 7.x。`wechat_v2` 库不需要手工创建，
+   数据源 URL 带 `createDatabaseIfNotExist=true`，启动应用时由 JDBC 驱动自动建库。
+2. 按需配置环境变量：`DB_URL`、`DB_USERNAME`、`DB_PASSWORD`、`REDIS_HOST`、`REDIS_PORT`、`REDIS_PASSWORD`；
+3. 启动应用（用 wrapper，不要用本机 `mvn`），Flyway 会自动执行 `db/migration` 下的脚本：
+
+```bash
+./mvnw spring-boot:run
+# Windows CMD / PowerShell：
+mvnw.cmd spring-boot:run
 ```
 
 默认 HTTP 端口 `8080`，健康检查 `GET /actuator/health`，接口文档 `GET /doc.html`。
