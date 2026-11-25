@@ -4,13 +4,12 @@ import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.security.LoginUser;
 import com.wechat.www.config.AuthProperties;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
-import java.util.Map;
 
 /**
  * 登录会话管理：opaque token 与 Redis 会话的读写。
@@ -31,16 +30,6 @@ import java.util.Map;
 public class TokenManager {
 
   /**
-   * 会话 Hash 的字段名
-   */
-  private static final String FIELD_USER_ID = "userId";
-
-  /**
-   * 会话 Hash 的字段名
-   */
-  private static final String FIELD_DEVICE_ID = "deviceId";
-
-  /**
    * token 随机字节数：256 位熵，暴力猜中概率可忽略
    */
   private static final int TOKEN_BYTES = 32;
@@ -50,7 +39,7 @@ public class TokenManager {
    */
   private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-  private final StringRedisTemplate stringRedisTemplate;
+  private final RedisTemplate<String, Object> redisTemplate;
 
   private final AuthProperties authProperties;
 
@@ -67,16 +56,14 @@ public class TokenManager {
 
     // 同一设备重复登录：旧 token 立即失效，避免会话越积越多
     String deviceKey = deviceKey(userId, deviceId);
-    String oldToken = stringRedisTemplate.opsForValue().get(deviceKey);
+    String oldToken = (String) redisTemplate.opsForValue().get(deviceKey);
     if (oldToken != null) {
-      stringRedisTemplate.delete(sessionKey(oldToken));
+      redisTemplate.delete(sessionKey(oldToken));
     }
 
-    stringRedisTemplate
-      .opsForHash()
-      .putAll(sessionKey(token), Map.of(FIELD_USER_ID, String.valueOf(userId), FIELD_DEVICE_ID, deviceId));
-    stringRedisTemplate.expire(sessionKey(token), ttl);
-    stringRedisTemplate.opsForValue().set(deviceKey, token, ttl);
+    // 会话整体存一个 LoginUser 对象（JSON 序列化），SET 时直接带 TTL，不用再单独 expire
+    redisTemplate.opsForValue().set(sessionKey(token), new LoginUser(userId, deviceId), ttl);
+    redisTemplate.opsForValue().set(deviceKey, token, ttl);
     return token;
   }
 
@@ -88,17 +75,17 @@ public class TokenManager {
    * @return 登录用户；token 不存在或已过期时返回 null
    */
   public LoginUser resolve(String token) {
-    Map<Object, Object> session = stringRedisTemplate.opsForHash().entries(sessionKey(token));
-    if (session == null || session.isEmpty()) {
+    String sessionKey = sessionKey(token);
+    Object session = redisTemplate.opsForValue().get(sessionKey);
+    // 会话缺失或格式不符一律按未登录处理，不把脏数据变成 500
+    if (!(session instanceof LoginUser loginUser)) {
       return null;
     }
-    Long userId = Long.valueOf(String.valueOf(session.get(FIELD_USER_ID)));
-    String deviceId = String.valueOf(session.get(FIELD_DEVICE_ID));
 
     Duration ttl = tokenTtl();
-    stringRedisTemplate.expire(sessionKey(token), ttl);
-    stringRedisTemplate.expire(deviceKey(userId, deviceId), ttl);
-    return new LoginUser(userId, deviceId);
+    redisTemplate.expire(sessionKey, ttl);
+    redisTemplate.expire(deviceKey(loginUser.userId(), loginUser.deviceId()), ttl);
+    return loginUser;
   }
 
   /**
@@ -112,11 +99,11 @@ public class TokenManager {
    */
   public void revoke(Long userId, String deviceId) {
     String deviceKey = deviceKey(userId, deviceId);
-    String token = stringRedisTemplate.opsForValue().get(deviceKey);
+    String token = (String) redisTemplate.opsForValue().get(deviceKey);
     if (token != null) {
-      stringRedisTemplate.delete(sessionKey(token));
+      redisTemplate.delete(sessionKey(token));
     }
-    stringRedisTemplate.delete(deviceKey);
+    redisTemplate.delete(deviceKey);
   }
 
   private String generateToken() {

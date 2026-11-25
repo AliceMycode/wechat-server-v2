@@ -18,7 +18,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
@@ -37,7 +37,7 @@ import java.time.Duration;
 @ConditionalOnProperty(name = "sms.mode", havingValue = "dysmsapi")
 public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
 
-  private final StringRedisTemplate stringRedisTemplate;
+  private final RedisTemplate<String, Object> redisTemplate;
   private final SmsProperties smsProperties;
   private final SmsDysmsProperties dysmsProperties;
   /**
@@ -74,7 +74,7 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
     String code = generateCode();
     // 先发后存：发送失败不会在 Redis 留下"看似有效"的验证码
     SmsSendResultDTO result = doSend(phone, scene, code);
-    stringRedisTemplate.opsForValue().set(codeKey(scene, phone), code,
+    redisTemplate.opsForValue().set(codeKey(scene, phone), code,
       Duration.ofSeconds(smsProperties.getCodeExpireSeconds()));
     return result;
   }
@@ -82,12 +82,12 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
   @Override
   public boolean verifyCode(String phone, SmsSceneEnum scene, String code) {
     String key = codeKey(scene, phone);
-    String saved = stringRedisTemplate.opsForValue().get(key);
+    String saved = (String) redisTemplate.opsForValue().get(key);
     if (saved == null || !saved.equals(code)) {
       return false;
     }
     // 核验通过立即作废，防重放；防暴力尝试（错误次数限制）由调用方在业务层实现
-    stringRedisTemplate.delete(key);
+    redisTemplate.delete(key);
     return true;
   }
 
