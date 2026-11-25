@@ -148,8 +148,10 @@ public class AuthServiceImpl implements AuthService {
   }
 
   private UserAccountDO findByPhone(String countryCode, String phone) {
-    return userAccountMapper.selectOne(new LambdaQueryWrapper<UserAccountDO>().eq(UserAccountDO::getCountryCode,
-        countryCode).eq(UserAccountDO::getPhone, phone));
+    return userAccountMapper.selectOne(
+      new LambdaQueryWrapper<UserAccountDO>()
+        .eq(UserAccountDO::getCountryCode, countryCode)
+        .eq(UserAccountDO::getPhone, phone));
   }
 
   /**
@@ -187,7 +189,7 @@ public class AuthServiceImpl implements AuthService {
   private void touchDevice(Long userId, String deviceId, Integer deviceType, String deviceName) {
     UserDeviceDO existing =
       userDeviceMapper.selectOne(new LambdaQueryWrapper<UserDeviceDO>().eq(UserDeviceDO::getUserId, userId)
-      .eq(UserDeviceDO::getDeviceId, deviceId));
+        .eq(UserDeviceDO::getDeviceId, deviceId));
     if (existing != null) {
       UserDeviceDO update = new UserDeviceDO();
       update.setId(existing.getId());

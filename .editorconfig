@@ -20,8 +20,11 @@ max_line_length = 120
 ij_java_continuation_indent_size = 2
 ij_java_wrap_long_lines = true
 # 链式调用：能放一行就放一行，超过 120 列才拆
-# split_into_lines（Chop down if long）会把短链也逐方法拆行，可读性差，不要使用
-ij_java_method_call_chain_wrap = wrap_if_long
+# 合法取值只有 off / normal / split_into_lines / on_every_item；
+# 写成 wrap_if_long 这类"看起来合理"的值会被 IDEA 静默忽略并回落到默认（每方法一行），
+# 这正是此前"保存后短链被拆行"的根因。
+# normal = Wrap if long（本项目采用）；split_into_lines = Chop down if long（短链也会被拆，不要用）
+ij_java_method_call_chain_wrap = normal
 # 首方法不单独换行，避免 "对象\n  .方法()" 的悬空写法
 ij_java_wrap_first_method_in_call_chain = false
 # 连续空行最多保留 1 行（仅限语句/成员之间；IDEA 不会删除右花括号 } 前的空行）
