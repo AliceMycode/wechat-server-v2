@@ -97,6 +97,8 @@ public class UserServiceImpl implements UserService {
     UserDeviceDO device = new UserDeviceDO();
     device.setUserId(userId);
     device.setDeviceId(dto.getDeviceId());
+    device.setDeviceType(dto.getDeviceType());
+    device.setDeviceName(dto.getDeviceName());
     userDeviceMapper.insert(device);
 
     log.info("用户注册成功 userId={} phone={}", userId, PhoneUtils.mask(phone));
