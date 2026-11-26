@@ -8,15 +8,16 @@ import lombok.Getter;
  *
  * <p>按《阿里巴巴 Java 开发手册》规范：错误码为 5 位字符串 = 错误来源 + 四位编号。
  * A=用户端错误，B=系统执行出错，C=调用第三方服务出错；编号取自手册附表 3 的既有语义。
+ *
+ * <p>本枚举<b>只装业务码</b>，不关心 HTTP 状态码 —— 401/400/500 属于传输层协议，
+ * 由 {@link GlobalExceptionHandler} 统一决定。
+ *
+ * <p>成功码 {@code 00000} 也不在这里：它是"一切 ok"的响应码而非错误码，
+ * 由 {@link com.wechat.www.common.result.Result} 内部持有。
  */
 @Getter
 @AllArgsConstructor
 public enum ErrorCodeEnum {
-
-  /**
-   * 一切正常
-   */
-  SUCCESS("00000", "成功"),
 
   /**
    * 用户请求参数错误（一级宏观错误码）
@@ -71,7 +72,8 @@ public enum ErrorCodeEnum {
   PASSWORD_FAIL_LIMIT("A0211", "密码错误次数过多，请稍后再试"),
 
   /**
-   * 用户登录已过期（手册附表 3：A0230）
+   * 用户登录已过期（手册附表 3：A0230）。与 {@link #UNAUTHORIZED} 同为认证类错误，
+   * 由 GlobalExceptionHandler 统一映射为 HTTP 401
    */
   LOGIN_EXPIRED("A0230", "登录已过期，请重新登录"),
 
