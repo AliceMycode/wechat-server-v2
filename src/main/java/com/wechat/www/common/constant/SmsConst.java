@@ -22,6 +22,16 @@ public final class SmsConst {
   public static final int VERIFY_MAX_FAIL_COUNT = 5;
 
   /**
+   * 验证码长度下界：auth 模式 4～8 位可配置，入口按此范围做宽松校验
+   */
+  public static final int CODE_MIN_LENGTH = 4;
+
+  /**
+   * 验证码长度上界
+   */
+  public static final int CODE_MAX_LENGTH = 8;
+
+  /**
    * 每分钟秒数：验证码有效期按秒配置，渠道模板的分钟参数由它换算
    */
   public static final int SECONDS_PER_MINUTE = 60;

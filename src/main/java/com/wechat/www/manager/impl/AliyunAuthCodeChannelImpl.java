@@ -117,7 +117,8 @@ public class AliyunAuthCodeChannelImpl implements SmsCodeChannel {
       SendSmsVerifyCodeResponseBody body = client.sendSmsVerifyCode(request).getBody();
       // 注意：HTTP 200 不代表发送成功，必须校验业务 success 标志，false/true:短信发送失败/成功
       if (!Boolean.TRUE.equals(body.getSuccess())) {
-        // 错误信息带上渠道错误码（isv.* 等）便于排查
+        // 渠道错误码（isv.* 等）只进日志：BizException 的 message 会原样返回前端，不能带出渠道细节
+        log.warn("认证服务短信验证码发送失败 phone={} channelCode={}", PhoneUtils.mask(phone), body.getCode());
         throw new BizException(ErrorCodeEnum.SMS_SEND_FAILED);
       }
       String bizId = body.getModel().getBizId();

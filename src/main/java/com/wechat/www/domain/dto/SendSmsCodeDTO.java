@@ -1,5 +1,6 @@
 package com.wechat.www.domain.dto;
 
+import com.wechat.www.common.constant.UserConst;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -20,7 +21,7 @@ public class SendSmsCodeDTO {
    */
   @Schema(description = "手机号", example = "13800138000")
   @NotBlank(message = "手机号不能为空")
-  @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
+  @Pattern(regexp = UserConst.PHONE_REGEXP, message = "手机号格式不正确")
   private String phone;
 
   /**
@@ -35,7 +36,7 @@ public class SendSmsCodeDTO {
    */
   @Schema(description = "设备标识（客户端生成并本地持久化的 UUID，用于风控审计）", example = "550e8400-e29b-41d4-a716-446655440000")
   @NotBlank(message = "设备标识不能为空")
-  @Size(max = 64, message = "设备标识长度不能超过 64")
+  @Size(max = UserConst.DEVICE_ID_MAX_LENGTH, message = "设备标识长度不能超过 " + UserConst.DEVICE_ID_MAX_LENGTH)
   private String deviceId;
 
 }

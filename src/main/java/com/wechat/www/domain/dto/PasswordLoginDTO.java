@@ -1,6 +1,9 @@
 package com.wechat.www.domain.dto;
 
+import com.wechat.www.common.constant.UserConst;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -19,7 +22,7 @@ public class PasswordLoginDTO {
    * 国家区号：当前仅支持中国大陆 86，不传时由服务端补默认值
    */
   @Schema(description = "国家区号，当前仅支持 86（不传默认 86）", example = "86")
-  @Pattern(regexp = "^86$", message = "当前仅支持中国大陆手机号")
+  @Pattern(regexp = UserConst.COUNTRY_CODE_REGEXP, message = "当前仅支持中国大陆手机号")
   private String countryCode;
 
   /**
@@ -27,7 +30,7 @@ public class PasswordLoginDTO {
    */
   @Schema(description = "手机号", example = "13800138000")
   @NotBlank(message = "手机号不能为空")
-  @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
+  @Pattern(regexp = UserConst.PHONE_REGEXP, message = "手机号格式不正确")
   private String phone;
 
   /**
@@ -42,20 +45,22 @@ public class PasswordLoginDTO {
    */
   @Schema(description = "设备标识（客户端生成并本地持久化的 UUID）", example = "550e8400-e29b-41d4-a716-446655440000")
   @NotBlank(message = "设备标识不能为空")
-  @Size(max = 64, message = "设备标识长度不能超过 64")
+  @Size(max = UserConst.DEVICE_ID_MAX_LENGTH, message = "设备标识长度不能超过 " + UserConst.DEVICE_ID_MAX_LENGTH)
   private String deviceId;
 
   /**
-   * 设备类型 1Electron 2iOS 3Android 4Web；不传按 0（未识别）落库
+   * 设备类型 1-Electron 2-iOS 3-Android 4-Web；不传按 0（未识别）落库
    */
-  @Schema(description = "设备类型 1Electron 2iOS 3Android 4Web", example = "1")
+  @Schema(description = "设备类型 1-Electron 2-iOS 3-Android 4-Web", example = "1")
+  @Min(value = UserConst.DEVICE_TYPE_MIN, message = "设备类型取值不正确")
+  @Max(value = UserConst.DEVICE_TYPE_MAX, message = "设备类型取值不正确")
   private Integer deviceType;
 
   /**
    * 设备名称
    */
   @Schema(description = "设备名称", example = "MacBook Pro")
-  @Size(max = 64, message = "设备名称长度不能超过 64")
+  @Size(max = UserConst.DEVICE_NAME_MAX_LENGTH, message = "设备名称长度不能超过 " + UserConst.DEVICE_NAME_MAX_LENGTH)
   private String deviceName;
 
 }

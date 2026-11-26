@@ -82,8 +82,8 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
   @Override
   public boolean verifyCode(String phone, SmsSceneEnum scene, String code) {
     String key = codeKey(scene, phone);
-    String saved = (String) redisTemplate.opsForValue().get(key);
-    if (saved == null || !saved.equals(code)) {
+    Object value = redisTemplate.opsForValue().get(key);
+    if (!(value instanceof String saved) || !saved.equals(code)) {
       return false;
     }
     // 核验通过立即作废，防重放；防暴力尝试（错误次数限制）由调用方在业务层实现
