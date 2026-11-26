@@ -117,6 +117,10 @@ sms:
   daily-limit: 10
   # 验证码有效期（秒）：auth 模式作为 ValidTime 传给阿里云；dysmsapi 模式用于本地 Redis TTL
   code-expire-seconds: 300
+  # 同一 IP 每分钟最多发送次数（手机号维度换号可绕过，IP 维度防换号刷短信）
+  ip-minute-limit: ${SMS_IP_MINUTE_LIMIT:10}
+  # 同一 IP 每 24 小时最多发送次数（滚动窗口，从首次发送起算，非自然日）
+  ip-daily-limit: ${SMS_IP_DAILY_LIMIT:50}
 
   # auth 模式（短信认证服务）专属：赠送签名 + 赠送模板（100001 格式）
   auth:

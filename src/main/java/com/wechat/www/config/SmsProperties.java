@@ -43,6 +43,16 @@ public class SmsProperties {
   private int dailyLimit = 10;
 
   /**
+   * 同一 IP 每分钟最多发送次数
+   */
+  private int ipMinuteLimit = 10;
+
+  /**
+   * 同一 IP 每 24 小时最多发送次数
+   */
+  private int ipDailyLimit = 50;
+
+  /**
    * 验证码有效期（秒）：auth 模式作为 ValidTime 传给阿里云；dysmsapi 模式用于本地 Redis TTL
    */
   private int codeExpireSeconds = 300;

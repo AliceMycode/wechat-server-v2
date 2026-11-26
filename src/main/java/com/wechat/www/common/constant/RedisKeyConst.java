@@ -23,6 +23,17 @@ public final class RedisKeyConst {
   public static final String SMS_VERIFY_FAIL_PREFIX = "wechat:sms:verify:fail:";
 
   /**
+   * 短信 IP 分钟限流：wechat:sms:ip:minute:{ip}，value=请求次数，TTL=1 分钟。
+   * 按来源而不按手机号：换手机号可绕开号码维度频控，IP 维度是换号刷短信的闸门
+   */
+  public static final String SMS_IP_MINUTE_LIMIT_PREFIX = "wechat:sms:ip:minute:";
+
+  /**
+   * 短信 IP 日限流：wechat:sms:ip:daily:{ip}，value=请求次数，TTL=24 小时（滚动窗口，非自然日）
+   */
+  public static final String SMS_IP_DAILY_LIMIT_PREFIX = "wechat:sms:ip:daily:";
+
+  /**
    * 登录会话：wechat:auth:session:{token}，value=LoginUser(JSON)，TTL=会话有效期，每次鉴权续期
    */
   public static final String AUTH_SESSION_PREFIX = "wechat:auth:session:";
