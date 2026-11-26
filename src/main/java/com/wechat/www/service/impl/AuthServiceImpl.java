@@ -68,13 +68,13 @@ public class AuthServiceImpl implements AuthService {
     String phone = dto.getPhone();
     String failKey = RedisKeyConst.AUTH_PWD_FAIL_PREFIX + phone;
 
-    // 先占坑再验证：INCR 是单命令原子操作，返回值即本次尝试序号。
-    // 并发请求各自拿到不同序号，不会出现"一起读到 4 全部放行"的窗口。
+    // 先建窗口再计数：setIfAbsent 在 key 不存在时一次性写入值与 TTL，之后 INCR 只改值不动 TTL。
+    // 与短信失败计数同一模式，不存在"有值无过期"的窗口；持续失败也不续期，锁定时长从首次失败算起。
+    stringRedisTemplate.opsForValue()
+      .setIfAbsent(failKey, "0", Duration.ofSeconds(AuthConst.PASSWORD_LOCK_SECONDS));
+    // INCR 是单命令原子操作，返回值即本次尝试序号：并发请求各自拿到不同序号，
+    // 不会出现"一起读到 4 全部放行"的窗口。
     Long attempt = stringRedisTemplate.opsForValue().increment(failKey);
-    if (attempt != null && attempt == 1L) {
-      // 只在首次创建时设 TTL，后续失败不续期：否则持续重试会把锁定时间无限延长
-      stringRedisTemplate.expire(failKey, Duration.ofSeconds(AuthConst.PASSWORD_LOCK_SECONDS));
-    }
     if (attempt != null && attempt > AuthConst.PASSWORD_MAX_FAIL_COUNT) {
       throw new BizException(ErrorCodeEnum.PASSWORD_FAIL_LIMIT);
     }
