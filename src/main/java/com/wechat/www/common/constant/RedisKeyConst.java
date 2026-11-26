@@ -23,7 +23,7 @@ public final class RedisKeyConst {
   public static final String SMS_VERIFY_FAIL_PREFIX = "wechat:sms:verify:fail:";
 
   /**
-   * 登录会话：wechat:auth:session:{token}，Hash{userId,deviceId}，TTL=会话有效期，每次鉴权续期
+   * 登录会话：wechat:auth:session:{token}，value=LoginUser(JSON)，TTL=会话有效期，每次鉴权续期
    */
   public static final String AUTH_SESSION_PREFIX = "wechat:auth:session:";
 

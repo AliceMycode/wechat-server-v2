@@ -7,12 +7,12 @@ package com.wechat.www.common.constant;
 public final class AliyunSmsConst {
 
   /**
-   * 短信认证服务（Dypnsapi）端点
+   * 阿里云云通信号码认证服务（Dypnsapi）端点
    */
   public static final String AUTH_ENDPOINT = "dypnsapi.aliyuncs.com";
 
   /**
-   * 传统短信服务（Dysmsapi）端点
+   * 阿里云短信服务（Dysmsapi）端点
    */
   public static final String DYSMS_ENDPOINT = "dysmsapi.aliyuncs.com";
 
