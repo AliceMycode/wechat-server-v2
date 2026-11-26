@@ -19,7 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -52,12 +51,6 @@ class SmsServiceImplTest {
   private SmsRecordMapper smsRecordMapper;
 
   @Mock
-  private RedisTemplate<String, Object> redisTemplate;
-
-  @Mock
-  private ValueOperations<String, Object> objectValueOperations;
-
-  @Mock
   private StringRedisTemplate stringRedisTemplate;
 
   @Mock
@@ -74,7 +67,7 @@ class SmsServiceImplTest {
     smsProperties.setSendIntervalSeconds(60);
     smsProperties.setDailyLimit(10);
     smsProperties.setCodeExpireSeconds(300);
-    smsService = new SmsServiceImpl(smsRecordMapper, redisTemplate, stringRedisTemplate, smsProperties, smsCodeChannel);
+    smsService = new SmsServiceImpl(smsRecordMapper, stringRedisTemplate, smsProperties, smsCodeChannel);
   }
 
   // ==================== sendCode：频控 ====================
@@ -82,8 +75,8 @@ class SmsServiceImplTest {
   @Test
   @DisplayName("冷却未过：拒绝发送，不调渠道也不落库")
   void sendCode_whenWithinCooldown_shouldRejectWithoutTouchingChannel() {
-    when(redisTemplate.opsForValue()).thenReturn(objectValueOperations);
-    when(objectValueOperations.setIfAbsent(eq(LIMIT_KEY), eq(SmsConst.SEND_LIMIT_PLACEHOLDER),
+    when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.setIfAbsent(eq(LIMIT_KEY), eq("1"),
       any(Duration.class))).thenReturn(false);
 
     BizException ex = assertThrows(BizException.class, () -> smsService.sendCode(sendDto(), IP));
@@ -96,8 +89,8 @@ class SmsServiceImplTest {
   @Test
   @DisplayName("当日发送达上限：拒绝发送")
   void sendCode_whenDailyLimitReached_shouldReject() {
-    when(redisTemplate.opsForValue()).thenReturn(objectValueOperations);
-    when(objectValueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
+    when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
     when(smsRecordMapper.selectCount(any())).thenReturn(10L);
 
     BizException ex = assertThrows(BizException.class, () -> smsService.sendCode(sendDto(), IP));
@@ -112,9 +105,8 @@ class SmsServiceImplTest {
   @Test
   @DisplayName("发送成功：落库成功状态并带回 bizId/requestId，清除失败计数")
   void sendCode_whenChannelSucceeds_shouldPersistSuccessRecord() {
-    when(redisTemplate.opsForValue()).thenReturn(objectValueOperations);
-    when(objectValueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
     when(smsRecordMapper.selectCount(any())).thenReturn(0L);
     when(smsCodeChannel.sendCode(PHONE, SmsSceneEnum.REGISTER)).thenReturn(new SmsSendResultDTO("biz-1", "req-1"));
 
@@ -131,14 +123,14 @@ class SmsServiceImplTest {
     assertThat(saved.getRequestId()).isEqualTo("req-1");
     assertThat(saved.getSendStatus()).isEqualTo(SmsConst.SEND_STATUS_SUCCESS);
     // 失败计数清零，并把 TTL 锚定在发送时刻（与验证码同生命周期）
-    verify(valueOperations).set(FAIL_KEY, SmsConst.VERIFY_FAIL_INIT_VALUE, Duration.ofSeconds(300));
+    verify(valueOperations).set(FAIL_KEY, "0", Duration.ofSeconds(300));
   }
 
   @Test
   @DisplayName("渠道失败：落库失败状态与错误码，异常原样透传")
   void sendCode_whenChannelFails_shouldPersistFailRecordAndRethrow() {
-    when(redisTemplate.opsForValue()).thenReturn(objectValueOperations);
-    when(objectValueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
+    when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
     when(smsRecordMapper.selectCount(any())).thenReturn(0L);
     when(smsCodeChannel.sendCode(PHONE, SmsSceneEnum.REGISTER)).thenThrow(new BizException(ErrorCodeEnum.SMS_SEND_FAILED, "短信发送失败: isv.BUSINESS_LIMIT_CONTROL"));
 

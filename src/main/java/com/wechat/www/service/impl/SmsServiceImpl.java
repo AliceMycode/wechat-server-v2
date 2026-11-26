@@ -17,7 +17,6 @@ import com.wechat.www.mapper.SmsRecordMapper;
 import com.wechat.www.service.SmsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -38,12 +37,9 @@ public class SmsServiceImpl implements SmsService {
 
   private final SmsRecordMapper smsRecordMapper;
   /**
-   * 频控占位等普通读写走 JSON 模板
-   */
-  private final RedisTemplate<String, Object> redisTemplate;
-  /**
-   * 验证码失败计数必须走 String 模板：{@code INCR} 要求 value 是裸数字字节，
-   * JSON 序列化写出的 {@code "0"} 带引号会直接报错
+   * 频控占位与验证码失败计数统一走 String 模板：{@code INCR} 要求 value 是裸数字字节，
+   * JSON 序列化写出的 {@code "0"} 带引号会直接报错；且同一把 key 的读写必须用同一模板，
+   * 混用会导致序列化方式不一致，读不回值或命令直接失败
    */
   private final StringRedisTemplate stringRedisTemplate;
   private final SmsProperties smsProperties;
@@ -56,7 +52,8 @@ public class SmsServiceImpl implements SmsService {
 
     // ---------- 频控一：每场景 60 秒冷却。SETNX 原子抢占，并发重复点击天然只有一个能进 ----------
     String limitKey = RedisKeyConst.SMS_LIMIT_PREFIX + scene.getCode() + ":" + phone;
-    Boolean acquired = redisTemplate.opsForValue().setIfAbsent(limitKey, SmsConst.SEND_LIMIT_PLACEHOLDER,
+    // value 只作占位，SETNX 只关心 key 是否存在
+    Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(limitKey, "1",
         Duration.ofSeconds(smsProperties.getSendIntervalSeconds()));
     if (!Boolean.TRUE.equals(acquired)) {
       throw new BizException(ErrorCodeEnum.SMS_SEND_FREQUENT, "发送太频繁，请稍后再试");
@@ -93,9 +90,10 @@ public class SmsServiceImpl implements SmsService {
     record.setSendStatus(SmsConst.SEND_STATUS_SUCCESS);
     smsRecordMapper.insert(record);
 
-    // 新验证码已生效：失败计数清零，同时把 TTL 锚定在本次发送时刻。
+    // 新验证码已生效：失败计数从 0 开始，同时把 TTL 锚定在本次发送时刻。
+    // 写 "0" 还有一层作用：该 key 存在即代表"验证码在有效期内"，核验入口据此判断窗口是否打开。
     // 不能在核验失败时才设 TTL —— 那样不断重试会不断续期，计数可能活得比验证码还久。
-    stringRedisTemplate.opsForValue().set(verifyFailKey(scene, phone), SmsConst.VERIFY_FAIL_INIT_VALUE,
+    stringRedisTemplate.opsForValue().set(verifyFailKey(scene, phone), "0",
         Duration.ofSeconds(smsProperties.getCodeExpireSeconds()));
 
     log.info("短信验证码发送成功 phone={} scene={} bizId={} requestId={}", PhoneUtils.mask(phone),
