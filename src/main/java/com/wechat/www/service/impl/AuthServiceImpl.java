@@ -1,13 +1,12 @@
 package com.wechat.www.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.wechat.www.common.constant.AuthConst;
 import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.constant.UserConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.security.LoginUser;
-import com.wechat.www.common.util.PhoneUtils;
-import com.wechat.www.config.AuthProperties;
 import com.wechat.www.domain.UserAccountDO;
 import com.wechat.www.domain.UserDeviceDO;
 import com.wechat.www.domain.UserProfileDO;
@@ -18,7 +17,6 @@ import com.wechat.www.domain.dto.VerifySmsCodeDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
 import com.wechat.www.domain.vo.LoginVO;
 import com.wechat.www.domain.vo.RegisterUserVO;
-import com.wechat.www.domain.vo.UserInfoVO;
 import com.wechat.www.manager.TokenManager;
 import com.wechat.www.mapper.UserAccountMapper;
 import com.wechat.www.mapper.UserDeviceMapper;
@@ -55,7 +53,6 @@ public class AuthServiceImpl implements AuthService {
   private final TokenManager tokenManager;
   private final PasswordEncoder passwordEncoder;
   private final StringRedisTemplate stringRedisTemplate;
-  private final AuthProperties authProperties;
 
   @Override
   public LoginVO registerAndLogin(RegisterUserDTO dto) {
@@ -63,7 +60,7 @@ public class AuthServiceImpl implements AuthService {
     // 本方法刻意不加 @Transactional：会话写 Redis 无法参与数据库回滚，
     // 放在事务里只会造成"Redis 成功、数据库回滚"的不一致
     RegisterUserVO user = userService.register(dto);
-    return issue(user.getUserId(), dto.getDeviceId(), user.getNickname(), dto.getDeviceType(), dto.getDeviceName());
+    return issue(user.getUserId(), dto.getDeviceId(), dto.getDeviceType(), dto.getDeviceName());
   }
 
   @Override
@@ -76,9 +73,9 @@ public class AuthServiceImpl implements AuthService {
     Long attempt = stringRedisTemplate.opsForValue().increment(failKey);
     if (attempt != null && attempt == 1L) {
       // 只在首次创建时设 TTL，后续失败不续期：否则持续重试会把锁定时间无限延长
-      stringRedisTemplate.expire(failKey, Duration.ofSeconds(authProperties.getPasswordLockSeconds()));
+      stringRedisTemplate.expire(failKey, Duration.ofSeconds(AuthConst.PASSWORD_LOCK_SECONDS));
     }
-    if (attempt != null && attempt > authProperties.getPasswordMaxFailCount()) {
+    if (attempt != null && attempt > AuthConst.PASSWORD_MAX_FAIL_COUNT) {
       throw new BizException(ErrorCodeEnum.PASSWORD_FAIL_LIMIT);
     }
 
@@ -95,8 +92,7 @@ public class AuthServiceImpl implements AuthService {
 
     // 登录成功清零，下一次失败重新从 1 开始
     stringRedisTemplate.delete(failKey);
-    return issue(account.getId(), dto.getDeviceId(), loadNickname(account.getId()), dto.getDeviceType(),
-      dto.getDeviceName());
+    return issue(account.getId(), dto.getDeviceId(), dto.getDeviceType(), dto.getDeviceName());
   }
 
   @Override
@@ -115,8 +111,7 @@ public class AuthServiceImpl implements AuthService {
     }
     ensureAccountUsable(account);
 
-    return issue(account.getId(), dto.getDeviceId(), loadNickname(account.getId()), dto.getDeviceType(),
-      dto.getDeviceName());
+    return issue(account.getId(), dto.getDeviceId(), dto.getDeviceType(), dto.getDeviceName());
   }
 
   @Override
@@ -126,25 +121,25 @@ public class AuthServiceImpl implements AuthService {
   }
 
   @Override
-  public UserInfoVO currentUser(LoginUser loginUser) {
-    UserAccountDO account = userAccountMapper.selectById(loginUser.userId());
-    if (account == null) {
-      // 账号在会话有效期内被物理删除，按登录失效处理
+  public UserProfileDO currentUser(LoginUser loginUser) {
+    UserProfileDO profile = userProfileMapper.selectOne(
+      new LambdaQueryWrapper<UserProfileDO>().eq(UserProfileDO::getUserId, loginUser.userId()));
+    if (profile == null) {
+      // 资料在会话有效期内被删除，按登录失效处理
       throw new BizException(ErrorCodeEnum.LOGIN_EXPIRED);
     }
-    return new UserInfoVO(account.getId(), loadNickname(account.getId()), PhoneUtils.mask(account.getPhone()),
-      loginUser.deviceId());
+    return profile;
   }
 
   /**
    * 三种登录入口共用的会话签发出口。
    */
-  private LoginVO issue(Long userId, String deviceId, String nickname, Integer deviceType, String deviceName) {
+  private LoginVO issue(Long userId, String deviceId, Integer deviceType, String deviceName) {
     String token = tokenManager.issue(userId, deviceId);
     updateLastLoginTime(userId);
     touchDevice(userId, deviceId, deviceType, deviceName);
     log.info("登录成功 userId={} deviceId={}", userId, deviceId);
-    return new LoginVO(token, userId, nickname, deviceId, authProperties.getTokenExpireSeconds());
+    return new LoginVO(token);
   }
 
   private UserAccountDO findByPhone(String countryCode, String phone) {
@@ -165,12 +160,6 @@ public class AuthServiceImpl implements AuthService {
     if (account.getStatus() == UserConst.STATUS_CANCELLED) {
       throw new BizException(ErrorCodeEnum.ACCOUNT_CANCELLED);
     }
-  }
-
-  private String loadNickname(Long userId) {
-    UserProfileDO profile =
-      userProfileMapper.selectOne(new LambdaQueryWrapper<UserProfileDO>().eq(UserProfileDO::getUserId, userId));
-    return profile == null ? "" : profile.getNickname();
   }
 
   private void updateLastLoginTime(Long userId) {

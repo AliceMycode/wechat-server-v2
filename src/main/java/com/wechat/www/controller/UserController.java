@@ -2,9 +2,9 @@ package com.wechat.www.controller;
 
 import com.wechat.www.common.result.Result;
 import com.wechat.www.common.security.LoginUser;
+import com.wechat.www.domain.UserProfileDO;
 import com.wechat.www.domain.dto.RegisterUserDTO;
 import com.wechat.www.domain.vo.LoginVO;
-import com.wechat.www.domain.vo.UserInfoVO;
 import com.wechat.www.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,7 +38,7 @@ public class UserController {
    */
   @Operation(summary = "当前登录用户信息")
   @GetMapping("/me")
-  public Result<UserInfoVO> me(@AuthenticationPrincipal LoginUser loginUser) {
+  public Result<UserProfileDO> me(@AuthenticationPrincipal LoginUser loginUser) {
     return Result.ok(authService.currentUser(loginUser));
   }
 

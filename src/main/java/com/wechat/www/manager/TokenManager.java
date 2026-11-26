@@ -1,8 +1,8 @@
 package com.wechat.www.manager;
 
+import com.wechat.www.common.constant.AuthConst;
 import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.security.LoginUser;
-import com.wechat.www.config.AuthProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -40,8 +40,6 @@ public class TokenManager {
   private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
   private final RedisTemplate<String, Object> redisTemplate;
-
-  private final AuthProperties authProperties;
 
   /**
    * 签发会话。同一设备已有会话时先作废旧会话，保证一台设备只有一个有效 token。
@@ -113,7 +111,7 @@ public class TokenManager {
   }
 
   private Duration tokenTtl() {
-    return Duration.ofSeconds(authProperties.getTokenExpireSeconds());
+    return Duration.ofSeconds(AuthConst.TOKEN_EXPIRE_SECONDS);
   }
 
   private String sessionKey(String token) {

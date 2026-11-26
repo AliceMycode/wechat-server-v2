@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wechat.www.common.constant.UserConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
+import com.wechat.www.common.util.PasswordUtils;
 import com.wechat.www.common.util.PhoneUtils;
 import com.wechat.www.domain.UserAccountDO;
 import com.wechat.www.domain.UserDeviceDO;
@@ -24,8 +25,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.regex.Pattern;
-
 /**
  * 用户服务实现。
  */
@@ -33,26 +32,6 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-
-  /**
-   * 密码允许的字符集：ASCII 可打印字符（0x21~0x7E），不含空格
-   */
-  private static final Pattern PASSWORD_ALLOWED = Pattern.compile("^[!-~]+$");
-
-  /**
-   * 字母
-   */
-  private static final Pattern PASSWORD_LETTER = Pattern.compile("[A-Za-z]");
-
-  /**
-   * 数字
-   */
-  private static final Pattern PASSWORD_DIGIT = Pattern.compile("\\d");
-
-  /**
-   * 符号：非字母非数字的 ASCII 字符
-   */
-  private static final Pattern PASSWORD_SYMBOL = Pattern.compile("[^A-Za-z0-9]");
 
   private final UserAccountMapper userAccountMapper;
   private final UserProfileMapper userProfileMapper;
@@ -65,7 +44,7 @@ public class UserServiceImpl implements UserService {
   public RegisterUserVO register(RegisterUserDTO dto) {
     String phone = dto.getPhone();
     // 密码策略先于验证码：密码不合法时不消耗用户刚收到的验证码
-    checkPasswordPolicy(dto.getPassword());
+    PasswordUtils.checkPolicy(dto.getPassword());
 
     // 验证码先于查重：未持有验证码的人无法借此探测手机号是否已注册
     VerifySmsCodeDTO verifyDto = new VerifySmsCodeDTO();
@@ -103,34 +82,6 @@ public class UserServiceImpl implements UserService {
 
     log.info("用户注册成功 userId={} phone={}", userId, PhoneUtils.mask(phone));
     return new RegisterUserVO(userId, dto.getNickname());
-  }
-
-  /**
-   * 密码策略（对标微信注册规则）：8~16 位，字母 / 数字 / 符号至少包含两类。
-   *
-   * <p>只允许 ASCII 可打印字符，避免中文、空格、控制字符进入密码，
-   * 也让"字母/数字/符号"的分类没有歧义。
-   */
-  private void checkPasswordPolicy(String password) {
-    if (password.length() < UserConst.PASSWORD_MIN_LENGTH || password.length() > UserConst.PASSWORD_MAX_LENGTH) {
-      throw new BizException(ErrorCodeEnum.PASSWORD_LENGTH_INVALID);
-    }
-    if (!PASSWORD_ALLOWED.matcher(password).matches()) {
-      throw new BizException(ErrorCodeEnum.PASSWORD_STRENGTH_WEAK);
-    }
-    int charTypes = 0;
-    if (PASSWORD_LETTER.matcher(password).find()) {
-      charTypes++;
-    }
-    if (PASSWORD_DIGIT.matcher(password).find()) {
-      charTypes++;
-    }
-    if (PASSWORD_SYMBOL.matcher(password).find()) {
-      charTypes++;
-    }
-    if (charTypes < UserConst.PASSWORD_MIN_CHAR_TYPES) {
-      throw new BizException(ErrorCodeEnum.PASSWORD_STRENGTH_WEAK);
-    }
   }
 
   /**

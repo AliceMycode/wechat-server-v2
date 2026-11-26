@@ -149,15 +149,6 @@ sms:
     # 模板 CODE，dysmsapi 模式必填，如 SMS_339620449
     template-code: ${ALIYUN_SMS_DYSMS_TEMPLATE_CODE:}
 
-# -------------------- 登录鉴权 --------------------
-auth:
-  # 会话有效期（秒），默认 7 天；每次鉴权通过都会续期，活跃用户不会掉线
-  token-expire-seconds: 604800
-  # 密码连续错误多少次后锁定
-  password-max-fail-count: 5
-  # 密码错误计数与锁定时长（秒），默认 15 分钟
-  password-lock-seconds: 900
-
 # -------------------- 接口文档（Knife4j / springdoc） --------------------
 # OpenAPI 3 文档由 springdoc 生成，UI 用 Knife4j 增强，访问 /doc.html
 springdoc:

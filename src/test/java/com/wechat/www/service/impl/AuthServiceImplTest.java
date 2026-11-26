@@ -5,7 +5,6 @@ import com.wechat.www.common.constant.UserConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.security.LoginUser;
-import com.wechat.www.config.AuthProperties;
 import com.wechat.www.domain.UserAccountDO;
 import com.wechat.www.domain.UserDeviceDO;
 import com.wechat.www.domain.UserProfileDO;
@@ -14,7 +13,6 @@ import com.wechat.www.domain.dto.SmsLoginDTO;
 import com.wechat.www.domain.dto.VerifySmsCodeDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
 import com.wechat.www.domain.vo.LoginVO;
-import com.wechat.www.domain.vo.UserInfoVO;
 import com.wechat.www.manager.TokenManager;
 import com.wechat.www.mapper.UserAccountMapper;
 import com.wechat.www.mapper.UserDeviceMapper;
@@ -31,6 +29,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -54,6 +54,9 @@ class AuthServiceImplTest {
   private static final String DEVICE_ID = "device-1";
   private static final String TOKEN = "token-abc";
   private static final long USER_ID = 726400000000000001L;
+  private static final long AVATAR_FILE_ID = 726400000000000002L;
+  private static final String SIGNATURE = "这个人很懒，什么都没留下";
+  private static final LocalDate BIRTHDAY = LocalDate.of(1995, 6, 1);
 
   private static final String FAIL_KEY = RedisKeyConst.AUTH_PWD_FAIL_PREFIX + PHONE;
 
@@ -88,12 +91,8 @@ class AuthServiceImplTest {
 
   @BeforeEach
   void setUp() {
-    AuthProperties authProperties = new AuthProperties();
-    authProperties.setTokenExpireSeconds(604800);
-    authProperties.setPasswordMaxFailCount(5);
-    authProperties.setPasswordLockSeconds(900);
-    authService = new AuthServiceImpl(userAccountMapper, userProfileMapper, userDeviceMapper, userService, smsService
-      , tokenManager, passwordEncoder, stringRedisTemplate, authProperties);
+    authService = new AuthServiceImpl(userAccountMapper, userProfileMapper, userDeviceMapper, userService, smsService,
+      tokenManager, passwordEncoder, stringRedisTemplate);
   }
 
   // ==================== 密码登录 ====================
@@ -105,17 +104,12 @@ class AuthServiceImplTest {
     when(valueOperations.increment(FAIL_KEY)).thenReturn(1L);
     when(userAccountMapper.selectOne(any())).thenReturn(account(UserConst.STATUS_NORMAL));
     when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
-    when(userProfileMapper.selectOne(any())).thenReturn(profile());
     when(userDeviceMapper.selectOne(any())).thenReturn(device());
     when(tokenManager.issue(USER_ID, DEVICE_ID)).thenReturn(TOKEN);
 
     LoginVO vo = authService.loginByPassword(passwordDto());
 
     assertThat(vo.getToken()).isEqualTo(TOKEN);
-    assertThat(vo.getUserId()).isEqualTo(USER_ID);
-    assertThat(vo.getNickname()).isEqualTo(NICKNAME);
-    assertThat(vo.getDeviceId()).isEqualTo(DEVICE_ID);
-    assertThat(vo.getExpireSeconds()).isEqualTo(604800);
     verify(userAccountMapper).updateById(any(UserAccountDO.class));
     verify(userDeviceMapper).updateById(any(UserDeviceDO.class));
     verify(stringRedisTemplate).delete(FAIL_KEY);
@@ -192,7 +186,6 @@ class AuthServiceImplTest {
   @DisplayName("验证码登录：以 scene=login 核验并签发 token")
   void loginBySms_whenSuccess_shouldVerifyWithLoginScene() {
     when(userAccountMapper.selectOne(any())).thenReturn(account(UserConst.STATUS_NORMAL));
-    when(userProfileMapper.selectOne(any())).thenReturn(profile());
     when(userDeviceMapper.selectOne(any())).thenReturn(device());
     when(tokenManager.issue(USER_ID, DEVICE_ID)).thenReturn(TOKEN);
 
@@ -228,23 +221,25 @@ class AuthServiceImplTest {
   }
 
   @Test
-  @DisplayName("当前用户：手机号脱敏输出")
-  void currentUser_shouldMaskPhone() {
-    when(userAccountMapper.selectById(USER_ID)).thenReturn(account(UserConst.STATUS_NORMAL));
+  @DisplayName("当前用户：从 user_profile 返回完整资料")
+  void currentUser_shouldReturnProfile() {
     when(userProfileMapper.selectOne(any())).thenReturn(profile());
 
-    UserInfoVO vo = authService.currentUser(new LoginUser(USER_ID, DEVICE_ID));
+    UserProfileDO vo = authService.currentUser(new LoginUser(USER_ID, DEVICE_ID));
 
     assertThat(vo.getUserId()).isEqualTo(USER_ID);
     assertThat(vo.getNickname()).isEqualTo(NICKNAME);
-    assertThat(vo.getPhone()).isEqualTo("138****8000");
-    assertThat(vo.getDeviceId()).isEqualTo(DEVICE_ID);
+    assertThat(vo.getAvatarFileId()).isEqualTo(AVATAR_FILE_ID);
+    assertThat(vo.getSignature()).isEqualTo(SIGNATURE);
+    assertThat(vo.getGender()).isEqualTo(1);
+    assertThat(vo.getArea()).isEqualTo("北京");
+    assertThat(vo.getBirthday()).isEqualTo(BIRTHDAY);
   }
 
   @Test
-  @DisplayName("当前用户：账号已被删除时按登录失效处理")
-  void currentUser_whenAccountMissing_shouldReturnLoginExpired() {
-    when(userAccountMapper.selectById(USER_ID)).thenReturn(null);
+  @DisplayName("当前用户：资料已被删除时按登录失效处理")
+  void currentUser_whenProfileMissing_shouldReturnLoginExpired() {
+    when(userProfileMapper.selectOne(any())).thenReturn(null);
 
     BizException ex = assertThrows(BizException.class, () -> authService.currentUser(new LoginUser(USER_ID,
       DEVICE_ID)));
@@ -268,6 +263,11 @@ class AuthServiceImplTest {
     UserProfileDO profile = new UserProfileDO();
     profile.setUserId(USER_ID);
     profile.setNickname(NICKNAME);
+    profile.setAvatarFileId(AVATAR_FILE_ID);
+    profile.setSignature(SIGNATURE);
+    profile.setGender(1);
+    profile.setArea("北京");
+    profile.setBirthday(BIRTHDAY);
     return profile;
   }
 
