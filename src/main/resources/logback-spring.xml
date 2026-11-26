@@ -29,7 +29,7 @@
   <!-- 控制台：与 Spring Boot 默认启动日志一致的彩色高亮格式 -->
   <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <!-- 必须保持单行：pattern 是元素文本，换行与缩进会原样进入输出，导致日志在 --- 后折行 -->
+      <!-- 必须保持单行：pattern 是元素文本，换行与缩进会原样进入输出，导致日志分隔符后折行 -->
       <pattern>%clr(%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([${APP_NAME}] [%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx</pattern>
     </encoder>
   </appender>
