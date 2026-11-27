@@ -1,6 +1,7 @@
 package com.wechat.www.config;
 
 import com.wechat.www.manager.SmsCodeChannel;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,6 +26,7 @@ class JacksonConfigTest {
   private ObjectMapper objectMapper;
 
   @Test
+  @DisplayName("雪花 ID 超出 JS 安全整数范围，序列化为字符串")
   void snowflakeIdShouldSerializeAsString() {
     // 雪花 ID 量级的 64 位整数，超过 JS 安全整数范围（2^53-1）
     long snowflakeId = 726400000000000001L;
@@ -32,6 +34,7 @@ class JacksonConfigTest {
   }
 
   @Test
+  @DisplayName("安全范围内的小 Long 保持数字输出")
   void smallLongShouldSerializeAsNumber() {
     // 计数类小数字保持在安全范围内，按数字输出
     assertThat(objectMapper.writeValueAsString(123L)).isEqualTo("123");
@@ -39,6 +42,7 @@ class JacksonConfigTest {
   }
 
   @Test
+  @DisplayName("边界 2^53-1 保持数字，超出即转为字符串")
   void boundaryShouldSerializeAsNumberAtSafeMax() {
     // 边界：恰好 2^53-1 仍是安全整数，按数字输出
     assertThat(objectMapper.writeValueAsString(9007199254740991L)).isEqualTo("9007199254740991");

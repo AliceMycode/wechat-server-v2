@@ -1,5 +1,6 @@
 package com.wechat.www.config;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.SerializationException;
@@ -22,6 +23,7 @@ class RedisConfigTest {
   private final RedisSerializer<Object> serializer = RedisSerializer.json();
 
   @Test
+  @DisplayName("POJO 可完整往返")
   void pojoShouldRoundTrip() {
     Sample sample = new Sample(726400000000000001L, "device-1");
 
@@ -31,6 +33,7 @@ class RedisConfigTest {
   }
 
   @Test
+  @DisplayName("HashMap 可完整往返")
   void hashMapShouldRoundTrip() {
     Map<String, Object> map = new HashMap<>();
     map.put("userId", 1L);
@@ -45,6 +48,7 @@ class RedisConfigTest {
   }
 
   @Test
+  @DisplayName("Map.of 生成的不可变 Map 无法反序列化")
   void immutableMapCannotBeReadBack() {
     Map<String, Object> map = Map.of("userId", 1L, "deviceId", "device-1");
     byte[] bytes = serializer.serialize(map);

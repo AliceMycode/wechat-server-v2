@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Locale;
 
 /**
  * 短信渠道阿里云"传统短信验证码"实现（Dysmsapi SDK，sms.mode=dysmsapi 时生效）。
@@ -123,8 +124,19 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
     }
   }
 
+  /**
+   * 生成 6 位数字验证码。
+   *
+   * <p>必须显式指定 {@link Locale#ROOT}：{@code String.format} 默认取
+   * {@link Locale#getDefault(Locale.Category)} 的 FORMAT 类别，在 ar-SA(阿拉伯语区)、fa-IR(波斯语区) 等 locale 下
+   * {@code %d} 输出的是本地化数字（如 ٠١٢٣٤٥）而非 ASCII 0-9。那样手机键盘打不出来，
+   * 且存入 Redis 的串与客户端回传的 ASCII 数字永远比对不上，验证码登录会整体失效。
+   * 触发条件只有一种：服务器或容器镜像的 locale 被配成了上述区域。
+   * Root locale 与语言无关，保证输出恒为 ASCII 数字，不随部署环境漂移。
+   */
   private String generateCode() {
-    return String.format(AliyunSmsConst.DYSMS_CODE_FORMAT, secureRandom.nextInt(AliyunSmsConst.DYSMS_CODE_UPPER_BOUND));
+    return String.format(Locale.ROOT, AliyunSmsConst.DYSMS_CODE_FORMAT,
+      secureRandom.nextInt(AliyunSmsConst.DYSMS_CODE_UPPER_BOUND));
   }
 
   /**

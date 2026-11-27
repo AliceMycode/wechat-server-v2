@@ -2,6 +2,9 @@ package com.wechat.www.common.exception;
 
 import lombok.Getter;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 /**
  * 业务异常：Service/Manager 层校验不通过或渠道调用失败时抛出，
  * 由 GlobalExceptionHandler 统一转换为 Result 响应，Controller 层不写 try-catch。
@@ -11,7 +14,13 @@ import lombok.Getter;
  * 错误码本身用 {@link #getErrorCode()} 取，两者不要再混用。
  */
 @Getter
-public class BizException extends RuntimeException {
+public class BizException extends RuntimeException implements Serializable {
+
+  /**
+   * 显式声明版本号：后续增删字段时不改这个值，保证旧序列化数据仍可反序列化
+   */
+  @Serial
+  private static final long serialVersionUID = 1L;
 
   /**
    * 错误码（决定业务码与 HTTP 状态码）
