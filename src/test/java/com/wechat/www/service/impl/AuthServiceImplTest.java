@@ -1,5 +1,6 @@
 package com.wechat.www.service.impl;
 
+import com.wechat.www.common.constant.PhoneConst;
 import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.constant.UserConst;
 import com.wechat.www.common.exception.BizException;
@@ -253,7 +254,7 @@ class AuthServiceImplTest {
   private UserAccountDO account(int status) {
     UserAccountDO account = new UserAccountDO();
     account.setId(USER_ID);
-    account.setCountryCode(UserConst.DEFAULT_COUNTRY_CODE);
+    account.setCountryCode(PhoneConst.DEFAULT_COUNTRY_CODE);
     account.setPhone(PHONE);
     account.setPasswordHash(PASSWORD_HASH);
     account.setStatus(status);

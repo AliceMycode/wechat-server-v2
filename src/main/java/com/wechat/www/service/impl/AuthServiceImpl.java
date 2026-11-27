@@ -2,6 +2,7 @@ package com.wechat.www.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wechat.www.common.constant.AuthConst;
+import com.wechat.www.common.constant.PhoneConst;
 import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.constant.UserConst;
 import com.wechat.www.common.exception.BizException;
@@ -204,7 +205,7 @@ public class AuthServiceImpl implements AuthService {
   }
 
   private String resolveCountryCode(String countryCode) {
-    return countryCode == null ? UserConst.DEFAULT_COUNTRY_CODE : countryCode;
+    return countryCode == null ? PhoneConst.DEFAULT_COUNTRY_CODE : countryCode;
   }
 
 }

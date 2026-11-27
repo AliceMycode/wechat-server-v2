@@ -41,7 +41,8 @@ public class SmsRecordDO {
   private String requestId;
 
   /**
-   * 状态 0发送中 1成功 2失败
+   * 发送状态：1成功 2失败。渠道调用是同步的，写入即终态，不存在"发送中"；
+   * 将来接入状态报告回执时才需要"待回执"这一档
    */
   private Integer sendStatus;
 

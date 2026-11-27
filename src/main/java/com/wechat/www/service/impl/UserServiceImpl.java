@@ -1,7 +1,7 @@
 package com.wechat.www.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.wechat.www.common.constant.UserConst;
+import com.wechat.www.common.constant.PhoneConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.util.PasswordUtils;
@@ -52,7 +52,7 @@ public class UserServiceImpl implements UserService {
     verifyDto.setCode(dto.getCode());
     smsService.verifyCode(verifyDto);
 
-    String countryCode = dto.getCountryCode() == null ? UserConst.DEFAULT_COUNTRY_CODE : dto.getCountryCode();
+    String countryCode = dto.getCountryCode() == null ? PhoneConst.DEFAULT_COUNTRY_CODE : dto.getCountryCode();
     ensurePhoneNotRegistered(countryCode, phone);
 
     UserAccountDO account = new UserAccountDO();

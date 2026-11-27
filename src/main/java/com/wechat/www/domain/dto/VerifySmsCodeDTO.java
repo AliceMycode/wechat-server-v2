@@ -1,7 +1,7 @@
 package com.wechat.www.domain.dto;
 
+import com.wechat.www.common.constant.PhoneConst;
 import com.wechat.www.common.constant.SmsConst;
-import com.wechat.www.common.constant.UserConst;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -22,7 +22,7 @@ public class VerifySmsCodeDTO {
    */
   @Schema(description = "手机号", example = "13800138000")
   @NotBlank(message = "手机号不能为空")
-  @Pattern(regexp = UserConst.PHONE_REGEXP, message = "手机号格式不正确")
+  @Pattern(regexp = PhoneConst.PHONE_REGEXP, message = "手机号格式不正确")
   private String phone;
 
   /**

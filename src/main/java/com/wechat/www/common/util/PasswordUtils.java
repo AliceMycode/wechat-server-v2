@@ -1,6 +1,6 @@
 package com.wechat.www.common.util;
 
-import com.wechat.www.common.constant.UserConst;
+import com.wechat.www.common.constant.PasswordConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 
@@ -46,7 +46,7 @@ public final class PasswordUtils {
    * @param password 明文密码
    */
   public static void checkPolicy(String password) {
-    if (password.length() < UserConst.PASSWORD_MIN_LENGTH || password.length() > UserConst.PASSWORD_MAX_LENGTH) {
+    if (password.length() < PasswordConst.PASSWORD_MIN_LENGTH || password.length() > PasswordConst.PASSWORD_MAX_LENGTH) {
       throw new BizException(ErrorCodeEnum.PASSWORD_LENGTH_INVALID);
     }
     if (!ALLOWED.matcher(password).matches()) {
@@ -62,7 +62,7 @@ public final class PasswordUtils {
     if (SYMBOL.matcher(password).find()) {
       charTypes++;
     }
-    if (charTypes < UserConst.PASSWORD_MIN_CHAR_TYPES) {
+    if (charTypes < PasswordConst.PASSWORD_MIN_CHAR_TYPES) {
       throw new BizException(ErrorCodeEnum.PASSWORD_STRENGTH_WEAK);
     }
   }

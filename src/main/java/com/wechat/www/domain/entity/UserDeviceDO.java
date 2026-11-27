@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.wechat.www.domain.enums.DeviceTypeEnum;
+import com.wechat.www.domain.enums.PushProviderEnum;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -32,7 +34,7 @@ public class UserDeviceDO {
   private String deviceId;
 
   /**
-   * 设备类型 1Electron 2iOS 3Android 4Web；未识别为 0
+   * 设备类型：取值见 {@link DeviceTypeEnum}，0 表示未识别
    */
   private Integer deviceType;
 
@@ -47,7 +49,7 @@ public class UserDeviceDO {
   private String pushToken;
 
   /**
-   * 推送通道 0无 1APNs 2华为 3小米 4OPPO 5vivo 6荣耀 7EMAS
+   * 推送通道：取值见 {@link PushProviderEnum}，0 表示无推送
    */
   private Integer pushProvider;
 
