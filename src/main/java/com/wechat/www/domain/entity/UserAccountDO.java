@@ -1,4 +1,4 @@
-package com.wechat.www.domain;
+package com.wechat.www.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -6,56 +6,45 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 用户资料 DO（对应表 user_profile）。
+ * 用户账号 DO（对应表 user_account）。
  */
 @Data
-@TableName("user_profile")
-public class UserProfileDO {
+@TableName("user_account")
+public class UserAccountDO {
 
   /**
-   * 自增ID
+   * 用户ID（雪花ID，插入时由 MyBatis-Plus 生成并回填）
    */
-  @TableId(type = IdType.AUTO)
+  @TableId(type = IdType.ASSIGN_ID)
   private Long id;
 
   /**
-   * 用户ID：与 user_account.id 一一对应（uk_user_id 唯一）
+   * 国家区号
    */
-  private Long userId;
+  private String countryCode;
 
   /**
-   * 昵称
+   * 手机号
    */
-  private String nickname;
+  private String phone;
 
   /**
-   * 头像文件ID
+   * 密码哈希（BCrypt，自带随机盐，固定 60 字符）
    */
-  private Long avatarFileId;
+  private String passwordHash;
 
   /**
-   * 个性签名
+   * 状态 0正常 1禁用 2注销
    */
-  private String signature;
+  private Integer status;
 
   /**
-   * 性别 0未知 1男 2女
+   * 最后登录时间
    */
-  private Integer gender;
-
-  /**
-   * 地区
-   */
-  private String area;
-
-  /**
-   * 生日
-   */
-  private LocalDate birthday;
+  private LocalDateTime lastLoginTime;
 
   /**
    * 创建时间：数据库 DEFAULT CURRENT_TIMESTAMP，不在代码里赋值

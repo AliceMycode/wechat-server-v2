@@ -33,7 +33,7 @@ public class UserController {
   /**
    * 用户注册：注册成功即登录，直接返回 token，前端无需再跳登录页。
    */
-  @IpRateLimit(minute = RateLimitConst.REGISTER_IP_MINUTE, daily = RateLimitConst.REGISTER_IP_DAILY)
+  @IpRateLimit(maxPerMinute = RateLimitConst.REGISTER_IP_MINUTE, maxPerDay = RateLimitConst.REGISTER_IP_DAILY)
   @Operation(summary = "用户注册（注册即登录）")
   @PostMapping("/register")
   public Result<LoginVO> register(@Valid @RequestBody RegisterUserDTO dto) {
@@ -46,7 +46,7 @@ public class UserController {
   @Operation(summary = "当前登录用户信息")
   @GetMapping("/me")
   public Result<UserProfileVO> me(@AuthenticationPrincipal LoginUser loginUser) {
-    return Result.ok(UserProfileVO.from(authService.currentUser(loginUser)));
+    return Result.ok(authService.currentUser(loginUser));
   }
 
 }

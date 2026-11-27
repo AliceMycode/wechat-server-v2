@@ -31,7 +31,7 @@ public class SmsController {
   /**
    * 发送短信验证码。IP 维度限流在进入方法前由拦截器完成，方法内只做手机号维度频控。
    */
-  @IpRateLimit(minute = RateLimitConst.SMS_IP_MINUTE, daily = RateLimitConst.SMS_IP_DAILY)
+  @IpRateLimit(maxPerMinute = RateLimitConst.SMS_IP_MINUTE, maxPerDay = RateLimitConst.SMS_IP_DAILY)
   @Operation(summary = "发送短信验证码")
   @PostMapping("/code")
   public Result<Void> sendCode(@Valid @RequestBody SendSmsCodeDTO dto, HttpServletRequest request) {

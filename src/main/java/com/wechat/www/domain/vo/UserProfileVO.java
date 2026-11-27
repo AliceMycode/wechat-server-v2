@@ -1,6 +1,6 @@
 package com.wechat.www.domain.vo;
 
-import com.wechat.www.domain.UserProfileDO;
+import com.wechat.www.domain.entity.UserProfileDO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

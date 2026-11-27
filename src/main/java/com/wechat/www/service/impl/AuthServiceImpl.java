@@ -7,16 +7,16 @@ import com.wechat.www.common.constant.UserConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.security.LoginUser;
-import com.wechat.www.domain.UserAccountDO;
-import com.wechat.www.domain.UserDeviceDO;
-import com.wechat.www.domain.UserProfileDO;
+import com.wechat.www.domain.entity.UserAccountDO;
+import com.wechat.www.domain.entity.UserDeviceDO;
+import com.wechat.www.domain.entity.UserProfileDO;
 import com.wechat.www.domain.dto.PasswordLoginDTO;
 import com.wechat.www.domain.dto.RegisterUserDTO;
 import com.wechat.www.domain.dto.SmsLoginDTO;
 import com.wechat.www.domain.dto.VerifySmsCodeDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
 import com.wechat.www.domain.vo.LoginVO;
-import com.wechat.www.domain.vo.RegisterUserVO;
+import com.wechat.www.domain.vo.UserProfileVO;
 import com.wechat.www.manager.TokenManager;
 import com.wechat.www.mapper.UserAccountMapper;
 import com.wechat.www.mapper.UserDeviceMapper;
@@ -59,8 +59,9 @@ public class AuthServiceImpl implements AuthService {
     // userService.register 自带事务，返回时注册已提交；
     // 本方法刻意不加 @Transactional：会话写 Redis 无法参与数据库回滚，
     // 放在事务里只会造成"Redis 成功、数据库回滚"的不一致
-    RegisterUserVO user = userService.register(dto);
-    return issue(user.getUserId(), dto.getDeviceId(), dto.getDeviceType(), dto.getDeviceName());
+    // register 只回传用户ID，昵称已随注册写入 user_profile
+    Long userId = userService.register(dto);
+    return issue(userId, dto.getDeviceId(), dto.getDeviceType(), dto.getDeviceName());
   }
 
   @Override
@@ -121,14 +122,14 @@ public class AuthServiceImpl implements AuthService {
   }
 
   @Override
-  public UserProfileDO currentUser(LoginUser loginUser) {
+  public UserProfileVO currentUser(LoginUser loginUser) {
     UserProfileDO profile = userProfileMapper.selectOne(
       new LambdaQueryWrapper<UserProfileDO>().eq(UserProfileDO::getUserId, loginUser.userId()));
     if (profile == null) {
       // 资料在会话有效期内被删除，按登录失效处理
       throw new BizException(ErrorCodeEnum.LOGIN_EXPIRED);
     }
-    return profile;
+    return UserProfileVO.from(profile);
   }
 
   /**

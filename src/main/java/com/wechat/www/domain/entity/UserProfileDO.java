@@ -1,4 +1,4 @@
-package com.wechat.www.domain;
+package com.wechat.www.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -6,14 +6,15 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 用户设备 DO（对应表 user_device）。
+ * 用户资料 DO（对应表 user_profile）。
  */
 @Data
-@TableName("user_device")
-public class UserDeviceDO {
+@TableName("user_profile")
+public class UserProfileDO {
 
   /**
    * 自增ID
@@ -22,44 +23,39 @@ public class UserDeviceDO {
   private Long id;
 
   /**
-   * 用户ID
+   * 用户ID：与 user_account.id 一一对应（uk_user_id 唯一）
    */
   private Long userId;
 
   /**
-   * 设备唯一标识：客户端首次启动生成并本地持久化的 UUID
+   * 昵称
    */
-  private String deviceId;
+  private String nickname;
 
   /**
-   * 设备类型 1Electron 2iOS 3Android 4Web；未识别为 0
+   * 头像文件ID
    */
-  private Integer deviceType;
+  private Long avatarFileId;
 
   /**
-   * 设备名称
+   * 个性签名
    */
-  private String deviceName;
+  private String signature;
 
   /**
-   * 推送token
+   * 性别 0未知 1男 2女
    */
-  private String pushToken;
+  private Integer gender;
 
   /**
-   * 推送通道 0无 1APNs 2华为 3小米 4OPPO 5vivo 6荣耀 7EMAS
+   * 地区
    */
-  private Integer pushProvider;
+  private String area;
 
   /**
-   * 最后活跃时间
+   * 生日
    */
-  private LocalDateTime lastActiveTime;
-
-  /**
-   * 状态 0正常 1禁用
-   */
-  private Integer status;
+  private LocalDate birthday;
 
   /**
    * 创建时间：数据库 DEFAULT CURRENT_TIMESTAMP，不在代码里赋值

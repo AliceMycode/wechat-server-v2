@@ -5,14 +5,15 @@ import com.wechat.www.common.constant.UserConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.security.LoginUser;
-import com.wechat.www.domain.UserAccountDO;
-import com.wechat.www.domain.UserDeviceDO;
-import com.wechat.www.domain.UserProfileDO;
+import com.wechat.www.domain.entity.UserAccountDO;
+import com.wechat.www.domain.entity.UserDeviceDO;
+import com.wechat.www.domain.entity.UserProfileDO;
 import com.wechat.www.domain.dto.PasswordLoginDTO;
 import com.wechat.www.domain.dto.SmsLoginDTO;
 import com.wechat.www.domain.dto.VerifySmsCodeDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
 import com.wechat.www.domain.vo.LoginVO;
+import com.wechat.www.domain.vo.UserProfileVO;
 import com.wechat.www.manager.TokenManager;
 import com.wechat.www.mapper.UserAccountMapper;
 import com.wechat.www.mapper.UserDeviceMapper;
@@ -225,7 +226,7 @@ class AuthServiceImplTest {
   void currentUser_shouldReturnProfile() {
     when(userProfileMapper.selectOne(any())).thenReturn(profile());
 
-    UserProfileDO vo = authService.currentUser(new LoginUser(USER_ID, DEVICE_ID));
+    UserProfileVO vo = authService.currentUser(new LoginUser(USER_ID, DEVICE_ID));
 
     assertThat(vo.getUserId()).isEqualTo(USER_ID);
     assertThat(vo.getNickname()).isEqualTo(NICKNAME);

@@ -7,7 +7,7 @@ import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.util.PhoneUtils;
 import com.wechat.www.config.SmsProperties;
-import com.wechat.www.domain.SmsRecordDO;
+import com.wechat.www.domain.entity.SmsRecordDO;
 import com.wechat.www.domain.dto.SendSmsCodeDTO;
 import com.wechat.www.domain.dto.SmsSendResultDTO;
 import com.wechat.www.domain.dto.VerifySmsCodeDTO;

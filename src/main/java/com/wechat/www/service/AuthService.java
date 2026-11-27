@@ -1,11 +1,11 @@
 package com.wechat.www.service;
 
 import com.wechat.www.common.security.LoginUser;
-import com.wechat.www.domain.UserProfileDO;
 import com.wechat.www.domain.dto.PasswordLoginDTO;
 import com.wechat.www.domain.dto.RegisterUserDTO;
 import com.wechat.www.domain.dto.SmsLoginDTO;
 import com.wechat.www.domain.vo.LoginVO;
+import com.wechat.www.domain.vo.UserProfileVO;
 
 /**
  * 登录鉴权服务。
@@ -44,11 +44,11 @@ public interface AuthService {
   void logout(LoginUser loginUser);
 
   /**
-   * 查询当前登录用户的资料（user_profile 整行）。
+   * 查询当前登录用户的资料。
    *
    * @param loginUser 当前登录用户
-   * @return 用户资料
+   * @return 用户资料（对外 VO，DO 不出 Service 层）
    */
-  UserProfileDO currentUser(LoginUser loginUser);
+  UserProfileVO currentUser(LoginUser loginUser);
 
 }

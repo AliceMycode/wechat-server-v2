@@ -14,7 +14,7 @@ import java.time.Duration;
  */
 @Component
 @RequiredArgsConstructor
-public class RateLimiter {
+public class RedisRateLimiter {
 
   private final StringRedisTemplate stringRedisTemplate;
 

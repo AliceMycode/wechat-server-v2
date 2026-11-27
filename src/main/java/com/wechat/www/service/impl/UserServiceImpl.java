@@ -6,13 +6,12 @@ import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.util.PasswordUtils;
 import com.wechat.www.common.util.PhoneUtils;
-import com.wechat.www.domain.UserAccountDO;
-import com.wechat.www.domain.UserDeviceDO;
-import com.wechat.www.domain.UserProfileDO;
+import com.wechat.www.domain.entity.UserAccountDO;
+import com.wechat.www.domain.entity.UserDeviceDO;
+import com.wechat.www.domain.entity.UserProfileDO;
 import com.wechat.www.domain.dto.RegisterUserDTO;
 import com.wechat.www.domain.dto.VerifySmsCodeDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
-import com.wechat.www.domain.vo.RegisterUserVO;
 import com.wechat.www.mapper.UserAccountMapper;
 import com.wechat.www.mapper.UserDeviceMapper;
 import com.wechat.www.mapper.UserProfileMapper;
@@ -41,7 +40,7 @@ public class UserServiceImpl implements UserService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public RegisterUserVO register(RegisterUserDTO dto) {
+  public Long register(RegisterUserDTO dto) {
     String phone = dto.getPhone();
     // 密码策略先于验证码：密码不合法时不消耗用户刚收到的验证码
     PasswordUtils.checkPolicy(dto.getPassword());
@@ -81,7 +80,7 @@ public class UserServiceImpl implements UserService {
     userDeviceMapper.insert(device);
 
     log.info("用户注册成功 userId={} phone={}", userId, PhoneUtils.mask(phone));
-    return new RegisterUserVO(userId, dto.getNickname());
+    return userId;
   }
 
   /**

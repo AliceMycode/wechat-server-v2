@@ -32,7 +32,7 @@ public class AuthController {
   /**
    * 手机号 + 密码登录。
    */
-  @IpRateLimit(minute = RateLimitConst.LOGIN_IP_MINUTE, daily = RateLimitConst.LOGIN_IP_DAILY)
+  @IpRateLimit(maxPerMinute = RateLimitConst.LOGIN_IP_MINUTE, maxPerDay = RateLimitConst.LOGIN_IP_DAILY)
   @Operation(summary = "手机号 + 密码登录")
   @PostMapping("/login/password")
   public Result<LoginVO> loginByPassword(@Valid @RequestBody PasswordLoginDTO dto) {

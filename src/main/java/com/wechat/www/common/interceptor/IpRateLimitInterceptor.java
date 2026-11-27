@@ -5,7 +5,7 @@ import com.wechat.www.common.constant.RedisKeyConst;
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
 import com.wechat.www.common.util.IpUtils;
-import com.wechat.www.manager.RateLimiter;
+import com.wechat.www.manager.RedisRateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -27,11 +27,11 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class IpRateLimitInterceptor implements HandlerInterceptor {
 
-  private final RateLimiter rateLimiter;
+  private final RedisRateLimiter redisRateLimiter;
 
   @Override
   public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
-                           @NonNull Object handler) {
+    @NonNull Object handler) {
     // 静态资源等非 Controller 方法（如 ResourceHttpRequestHandler）直接放行
     if (!(handler instanceof HandlerMethod handlerMethod)) {
       return true;
@@ -44,8 +44,8 @@ public class IpRateLimitInterceptor implements HandlerInterceptor {
     String methodKey =
       handlerMethod.getBeanType().getSimpleName() + "." + handlerMethod.getMethod().getName();
     String key = RedisKeyConst.RATE_LIMIT_IP_PREFIX + methodKey + ":" + IpUtils.resolveClientIp(request);
-    if (rateLimiter.hit(key + ":minute", Duration.ofMinutes(1)) > rule.minute()
-      || rateLimiter.hit(key + ":daily", Duration.ofDays(1)) > rule.daily()) {
+    if (redisRateLimiter.hit(key + ":minute", Duration.ofMinutes(1)) > rule.maxPerMinute()
+      || redisRateLimiter.hit(key + ":daily", Duration.ofDays(1)) > rule.maxPerDay()) {
       throw new BizException(ErrorCodeEnum.REQUEST_FREQUENT);
     }
     return true;

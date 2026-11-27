@@ -2,13 +2,12 @@ package com.wechat.www.service.impl;
 
 import com.wechat.www.common.exception.BizException;
 import com.wechat.www.common.exception.ErrorCodeEnum;
-import com.wechat.www.domain.UserAccountDO;
-import com.wechat.www.domain.UserDeviceDO;
-import com.wechat.www.domain.UserProfileDO;
+import com.wechat.www.domain.entity.UserAccountDO;
+import com.wechat.www.domain.entity.UserDeviceDO;
+import com.wechat.www.domain.entity.UserProfileDO;
 import com.wechat.www.domain.dto.RegisterUserDTO;
 import com.wechat.www.domain.dto.VerifySmsCodeDTO;
 import com.wechat.www.domain.enums.SmsSceneEnum;
-import com.wechat.www.domain.vo.RegisterUserVO;
 import com.wechat.www.mapper.UserAccountMapper;
 import com.wechat.www.mapper.UserDeviceMapper;
 import com.wechat.www.mapper.UserProfileMapper;
@@ -157,10 +156,9 @@ class UserServiceImplTest {
       return 1;
     }).when(userAccountMapper).insert(any(UserAccountDO.class));
 
-    RegisterUserVO vo = userService.register(dto(VALID_PASSWORD));
+    Long userId = userService.register(dto(VALID_PASSWORD));
 
-    assertThat(vo.getUserId()).isEqualTo(USER_ID);
-    assertThat(vo.getNickname()).isEqualTo(NICKNAME);
+    assertThat(userId).isEqualTo(USER_ID);
 
     // 验证码以 register 场景核验
     ArgumentCaptor<VerifySmsCodeDTO> verifyCaptor = ArgumentCaptor.forClass(VerifySmsCodeDTO.class);

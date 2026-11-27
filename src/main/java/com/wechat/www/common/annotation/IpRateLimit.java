@@ -20,11 +20,11 @@ public @interface IpRateLimit {
   /**
    * 同一 IP 每分钟最多请求次数
    */
-  int minute();
+  int maxPerMinute();
 
   /**
    * 同一 IP 每 24 小时（滚动窗口）最多请求次数
    */
-  int daily();
+  int maxPerDay();
 
 }
