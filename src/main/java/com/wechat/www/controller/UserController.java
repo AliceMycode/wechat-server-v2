@@ -1,5 +1,7 @@
 package com.wechat.www.controller;
 
+import com.wechat.www.common.annotation.IpRateLimit;
+import com.wechat.www.common.constant.RateLimitConst;
 import com.wechat.www.common.result.Result;
 import com.wechat.www.common.security.LoginUser;
 import com.wechat.www.domain.dto.RegisterUserDTO;
@@ -31,6 +33,7 @@ public class UserController {
   /**
    * 用户注册：注册成功即登录，直接返回 token，前端无需再跳登录页。
    */
+  @IpRateLimit(minute = RateLimitConst.REGISTER_IP_MINUTE, daily = RateLimitConst.REGISTER_IP_DAILY)
   @Operation(summary = "用户注册（注册即登录）")
   @PostMapping("/register")
   public Result<LoginVO> register(@Valid @RequestBody RegisterUserDTO dto) {

@@ -49,6 +49,12 @@ public final class RedisKeyConst {
    */
   public static final String AUTH_PWD_FAIL_PREFIX = "wechat:auth:pwd:fail:";
 
+  /**
+   * IP 维度限流：wechat:rate:ip:{类名.方法名}:{ip}:{minute|daily}，value=请求次数，TTL=窗口长度。
+   * key 带方法名是为了让不同接口各有配额，互不消耗
+   */
+  public static final String RATE_LIMIT_IP_PREFIX = "wechat:rate:ip:";
+
   private RedisKeyConst() {
   }
 

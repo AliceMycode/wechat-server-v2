@@ -98,6 +98,12 @@ public enum ErrorCodeEnum {
   SMS_SEND_FREQUENT("A0501", "请求次数超出限制"),
 
   /**
+   * 请求次数超出限制（IP 维度限流）。与 {@link #SMS_SEND_FREQUENT} 同为 A0501，
+   * 下一轮短信 IP 限流迁移到拦截器时合并为一个
+   */
+  REQUEST_FREQUENT("A0501", "请求次数超出限制"),
+
+  /**
    * 短信提醒服务失败（第三方渠道异常）
    */
   SMS_SEND_FAILED("C0501", "短信发送失败，请稍后再试"),

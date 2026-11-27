@@ -1,5 +1,7 @@
 package com.wechat.www.controller;
 
+import com.wechat.www.common.annotation.IpRateLimit;
+import com.wechat.www.common.constant.RateLimitConst;
 import com.wechat.www.common.result.Result;
 import com.wechat.www.common.security.LoginUser;
 import com.wechat.www.domain.dto.PasswordLoginDTO;
@@ -30,6 +32,7 @@ public class AuthController {
   /**
    * 手机号 + 密码登录。
    */
+  @IpRateLimit(minute = RateLimitConst.LOGIN_IP_MINUTE, daily = RateLimitConst.LOGIN_IP_DAILY)
   @Operation(summary = "手机号 + 密码登录")
   @PostMapping("/login/password")
   public Result<LoginVO> loginByPassword(@Valid @RequestBody PasswordLoginDTO dto) {
