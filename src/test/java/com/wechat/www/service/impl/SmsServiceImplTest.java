@@ -67,46 +67,10 @@ class SmsServiceImplTest {
     smsProperties.setSendIntervalSeconds(60);
     smsProperties.setDailyLimit(10);
     smsProperties.setCodeExpireSeconds(300);
-    smsProperties.setIpMinuteLimit(10);
-    smsProperties.setIpDailyLimit(50);
     smsService = new SmsServiceImpl(smsRecordMapper, stringRedisTemplate, smsProperties, smsCodeChannel);
-
-    // IP 维度限流在最前面，多数用例并不关心它：默认放行（次数 1、未超限），
-    // 需要测 IP 层或手机号冷却的用例在方法内用更精确的 stub 覆盖
-    lenient().when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class)))
-      .thenReturn(true);
-    lenient().when(valueOperations.increment(anyString())).thenReturn(1L);
   }
 
   // ==================== sendCode：频控 ====================
-
-  @Test
-  @DisplayName("IP 分钟超限：拒绝发送，不调渠道也不落库")
-  void sendCode_whenIpMinuteLimitExceeded_shouldRejectWithoutChannel() {
-    when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-    when(valueOperations.increment(RedisKeyConst.SMS_IP_MINUTE_LIMIT_PREFIX + IP)).thenReturn(11L);
-
-    BizException ex = assertThrows(BizException.class, () -> smsService.sendCode(sendDto(), IP));
-
-    assertThat(ex.getErrorCode()).isEqualTo(ErrorCodeEnum.SMS_SEND_FREQUENT);
-    assertThat(ex.getMessage()).isEqualTo("发送太频繁，请稍后再试");
-    verify(smsCodeChannel, never()).sendCode(anyString(), any());
-    verify(smsRecordMapper, never()).insert(any(SmsRecordDO.class));
-  }
-
-  @Test
-  @DisplayName("IP 日超限：拒绝发送，不调渠道也不落库")
-  void sendCode_whenIpDailyLimitExceeded_shouldRejectWithoutChannel() {
-    when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-    when(valueOperations.increment(RedisKeyConst.SMS_IP_DAILY_LIMIT_PREFIX + IP)).thenReturn(51L);
-
-    BizException ex = assertThrows(BizException.class, () -> smsService.sendCode(sendDto(), IP));
-
-    assertThat(ex.getErrorCode()).isEqualTo(ErrorCodeEnum.SMS_SEND_FREQUENT);
-    assertThat(ex.getMessage()).contains("该网络");
-    verify(smsCodeChannel, never()).sendCode(anyString(), any());
-    verify(smsRecordMapper, never()).insert(any(SmsRecordDO.class));
-  }
 
   @Test
   @DisplayName("冷却未过：拒绝发送，不调渠道也不落库")
@@ -117,7 +81,7 @@ class SmsServiceImplTest {
 
     BizException ex = assertThrows(BizException.class, () -> smsService.sendCode(sendDto(), IP));
 
-    assertThat(ex.getErrorCode()).isEqualTo(ErrorCodeEnum.SMS_SEND_FREQUENT);
+    assertThat(ex.getErrorCode()).isEqualTo(ErrorCodeEnum.REQUEST_FREQUENT);
     verify(smsCodeChannel, never()).sendCode(anyString(), any());
     verify(smsRecordMapper, never()).insert(any(SmsRecordDO.class));
   }
@@ -131,7 +95,7 @@ class SmsServiceImplTest {
 
     BizException ex = assertThrows(BizException.class, () -> smsService.sendCode(sendDto(), IP));
 
-    assertThat(ex.getErrorCode()).isEqualTo(ErrorCodeEnum.SMS_SEND_FREQUENT);
+    assertThat(ex.getErrorCode()).isEqualTo(ErrorCodeEnum.REQUEST_FREQUENT);
     assertThat(ex.getMessage()).isEqualTo("今日发送次数已达上限");
     verify(smsCodeChannel, never()).sendCode(anyString(), any());
   }

@@ -29,6 +29,17 @@ public final class RateLimitConst {
    */
   public static final int REGISTER_IP_DAILY = 50;
 
+  /**
+   * 短信发码：同一 IP 每分钟请求上限。手机号维度的冷却与每日上限换号即可绕过，
+   * IP 是换号刷短信的唯一闸门
+   */
+  public static final int SMS_IP_MINUTE = 10;
+
+  /**
+   * 短信发码：同一 IP 每 24 小时请求上限
+   */
+  public static final int SMS_IP_DAILY = 50;
+
   private RateLimitConst() {
   }
 

@@ -50,10 +50,8 @@ public class SmsServiceImpl implements SmsService {
     SmsSceneEnum scene = SmsSceneEnum.of(dto.getScene());
     String phone = dto.getPhone();
 
-    // 如果攻击者拿一堆合法的不同的手机号发短信频控一/二都防不住，因为频控一/二防的是手机号，
-
-    // ---------- 频控零：IP 维度。换号可绕过手机号频控，IP 是唯一闸门 ----------
-    checkIpLimit(ip);
+    // IP 维度限流已上移到 @IpRateLimit 拦截器（SmsController.sendCode）：
+    // 换号可绕过下面两道手机号维度频控，IP 才是换号刷短信的闸门
 
     // ---------- 频控一：每场景 60 秒冷却。SETNX 原子抢占，并发重复点击天然只有一个能进 ----------
     String limitKey = RedisKeyConst.SMS_LIMIT_PREFIX + scene.getCode() + ":" + phone;
@@ -61,7 +59,7 @@ public class SmsServiceImpl implements SmsService {
     Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(limitKey, "1",
       Duration.ofSeconds(smsProperties.getSendIntervalSeconds()));
     if (!Boolean.TRUE.equals(acquired)) {
-      throw new BizException(ErrorCodeEnum.SMS_SEND_FREQUENT, "发送太频繁，请稍后再试");
+      throw new BizException(ErrorCodeEnum.REQUEST_FREQUENT, "发送太频繁，请稍后再试");
     }
 
     // ---------- 频控二：当日发送上限。走 idx_phone_create (phone, create_time) 索引 ----------
@@ -69,7 +67,7 @@ public class SmsServiceImpl implements SmsService {
       .eq(SmsRecordDO::getPhone, phone)
       .ge(SmsRecordDO::getCreateTime, LocalDate.now().atStartOfDay()));
     if (todayCount >= smsProperties.getDailyLimit()) {
-      throw new BizException(ErrorCodeEnum.SMS_SEND_FREQUENT, "今日发送次数已达上限");
+      throw new BizException(ErrorCodeEnum.REQUEST_FREQUENT, "今日发送次数已达上限");
     }
 
     // ---------- 渠道发送（验证码生成与托管由渠道实现负责，本类不感知） ----------
@@ -141,37 +139,6 @@ public class SmsServiceImpl implements SmsService {
    */
   private String verifyFailKey(SmsSceneEnum scene, String phone) {
     return RedisKeyConst.SMS_VERIFY_FAIL_PREFIX + scene.getCode() + ":" + phone;
-  }
-
-  /**
-   * IP 维度两道窗口：先分钟、后 24 小时，任一超限即拒绝。
-   *
-   * <p>计数模式与密码错误计数一致：setIfAbsent 在首次请求时一次性写入值与 TTL，
-   * 之后 INCR 只改值不动 TTL，不存在"有值无过期"的窗口；持续请求也不续期，
-   * 窗口从首次请求起算。
-   */
-  private void checkIpLimit(String ip) {
-    if (ip == null || ip.isBlank()) {
-      // 取不到来源时不限：不能因为拿不到 IP 把正常请求全部拒掉
-      return;
-    }
-    if (overLimit(RedisKeyConst.SMS_IP_MINUTE_LIMIT_PREFIX + ip, Duration.ofMinutes(1),
-      smsProperties.getIpMinuteLimit())) {
-      throw new BizException(ErrorCodeEnum.SMS_SEND_FREQUENT, "发送太频繁，请稍后再试");
-    }
-    if (overLimit(RedisKeyConst.SMS_IP_DAILY_LIMIT_PREFIX + ip, Duration.ofDays(1),
-      smsProperties.getIpDailyLimit())) {
-      throw new BizException(ErrorCodeEnum.SMS_SEND_FREQUENT, "该网络今日发送次数已达上限，请明日再试");
-    }
-  }
-
-  /**
-   * 固定窗口计数：返回本次请求是否已超出上限。
-   */
-  private boolean overLimit(String key, Duration ttl, int limit) {
-    stringRedisTemplate.opsForValue().setIfAbsent(key, "0", ttl);
-    Long count = stringRedisTemplate.opsForValue().increment(key);
-    return count != null && count > limit;
   }
 
 }

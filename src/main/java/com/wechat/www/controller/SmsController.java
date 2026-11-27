@@ -1,6 +1,9 @@
 package com.wechat.www.controller;
 
+import com.wechat.www.common.annotation.IpRateLimit;
+import com.wechat.www.common.constant.RateLimitConst;
 import com.wechat.www.common.result.Result;
+import com.wechat.www.common.util.IpUtils;
 import com.wechat.www.domain.dto.SendSmsCodeDTO;
 import com.wechat.www.domain.dto.VerifySmsCodeDTO;
 import com.wechat.www.service.SmsService;
@@ -26,12 +29,13 @@ public class SmsController {
   private final SmsService smsService;
 
   /**
-   * 发送短信验证码。
+   * 发送短信验证码。IP 维度限流在进入方法前由拦截器完成，方法内只做手机号维度频控。
    */
+  @IpRateLimit(minute = RateLimitConst.SMS_IP_MINUTE, daily = RateLimitConst.SMS_IP_DAILY)
   @Operation(summary = "发送短信验证码")
   @PostMapping("/code")
   public Result<Void> sendCode(@Valid @RequestBody SendSmsCodeDTO dto, HttpServletRequest request) {
-    smsService.sendCode(dto, getClientIp(request));
+    smsService.sendCode(dto, IpUtils.resolveClientIp(request));
     return Result.ok();
   }
 
@@ -43,18 +47,6 @@ public class SmsController {
   public Result<Void> verifyCode(@Valid @RequestBody VerifySmsCodeDTO dto) {
     smsService.verifyCode(dto);
     return Result.ok();
-  }
-
-  /**
-   * 取客户端真实 IP：优先 X-Forwarded-For 首段（经过 Nginx 等代理时由代理写入，
-   * 多级代理格式为 "client, proxy1, proxy2"）；未经过代理则取直连地址。
-   */
-  private String getClientIp(HttpServletRequest request) {
-    String xff = request.getHeader("X-Forwarded-For");
-    if (xff != null && !xff.isEmpty()) {
-      return xff.split(",")[0].trim();
-    }
-    return request.getRemoteAddr();
   }
 
 }

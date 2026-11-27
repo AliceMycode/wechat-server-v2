@@ -93,13 +93,8 @@ public enum ErrorCodeEnum {
   JSON_PARSE_ERROR("A0427", "请求体解析失败"),
 
   /**
-   * 请求次数超出限制（短信频控）
-   */
-  SMS_SEND_FREQUENT("A0501", "请求次数超出限制"),
-
-  /**
-   * 请求次数超出限制（IP 维度限流）。与 {@link #SMS_SEND_FREQUENT} 同为 A0501，
-   * 下一轮短信 IP 限流迁移到拦截器时合并为一个
+   * 请求次数超出限制：IP 维度限流（登录、注册、短信发码），以及手机号维度的
+   * 发送冷却与每日上限，统一返回此码
    */
   REQUEST_FREQUENT("A0501", "请求次数超出限制"),
 
