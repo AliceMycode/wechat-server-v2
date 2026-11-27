@@ -22,6 +22,11 @@ public final class UserConst {
   public static final String PHONE_REGEXP = "^1[3-9]\\d{9}$";
 
   /**
+   * 昵称最大长度
+   */
+  public static final int NICKNAME_MAX_LENGTH = 20;
+
+  /**
    * 设备标识最大长度：客户端生成的 UUID 为 36 位，留余量兼容其他形态
    */
   public static final int DEVICE_ID_MAX_LENGTH = 64;

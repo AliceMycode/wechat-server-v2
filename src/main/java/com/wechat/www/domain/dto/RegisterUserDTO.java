@@ -46,7 +46,7 @@ public class RegisterUserDTO {
    */
   @Schema(description = "昵称", example = "微信用户001")
   @NotBlank(message = "昵称不能为空")
-  @Size(max = 20, message = "昵称长度不能超过 20")
+  @Size(max = UserConst.NICKNAME_MAX_LENGTH, message = "昵称长度不能超过 " + UserConst.NICKNAME_MAX_LENGTH)
   private String nickname;
 
   /**

@@ -86,8 +86,8 @@ public class AliyunAuthCodeChannelImpl implements SmsCodeChannel {
       .setAccessKeySecret(smsProperties.getAccessKeySecret())
       .setEndpoint(AliyunSmsConst.AUTH_ENDPOINT)
       // 服务器规约【强制】：调用远程操作必须有超时设置
-      .setConnectTimeout(3000)
-      .setReadTimeout(5000);
+      .setConnectTimeout(AliyunSmsConst.CONNECT_TIMEOUT_MILLIS)
+      .setReadTimeout(AliyunSmsConst.READ_TIMEOUT_MILLIS);
     client = new Client(config);
     log.info("阿里云短信认证服务客户端初始化完成 endpoint={} signName={} schemes={}",
       AliyunSmsConst.AUTH_ENDPOINT, authProperties.getSignName(), authProperties.getSchemeName());

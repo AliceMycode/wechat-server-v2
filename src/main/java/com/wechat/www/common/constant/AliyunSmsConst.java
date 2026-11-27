@@ -17,6 +17,16 @@ public final class AliyunSmsConst {
   public static final String DYSMS_ENDPOINT = "dysmsapi.aliyuncs.com";
 
   /**
+   * SDK 连接超时（毫秒）：远端操作必须有超时设置，否则线程会被慢连接拖死
+   */
+  public static final int CONNECT_TIMEOUT_MILLIS = 3000;
+
+  /**
+   * SDK 读取超时（毫秒）：短信网关偶发抖动，读取窗口放宽于连接
+   */
+  public static final int READ_TIMEOUT_MILLIS = 5000;
+
+  /**
    * 认证服务核验通过的结果值（阿里云文档约定，不通过为 REJECT）
    */
   public static final String AUTH_VERIFY_RESULT_PASS = "PASS";

@@ -63,8 +63,8 @@ public class AliyunDysmsCodeChannelImpl implements SmsCodeChannel {
       .setAccessKeySecret(smsProperties.getAccessKeySecret())
       .setEndpoint(AliyunSmsConst.DYSMS_ENDPOINT)
       // 服务器规约【强制】：调用远程操作必须有超时设置
-      .setConnectTimeout(3000)
-      .setReadTimeout(5000);
+      .setConnectTimeout(AliyunSmsConst.CONNECT_TIMEOUT_MILLIS)
+      .setReadTimeout(AliyunSmsConst.READ_TIMEOUT_MILLIS);
     client = new Client(config);
     log.info("阿里云短信（Dysmsapi）客户端初始化完成 endpoint={}", AliyunSmsConst.DYSMS_ENDPOINT);
   }
